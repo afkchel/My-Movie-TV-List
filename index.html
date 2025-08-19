@@ -1,11 +1,10 @@
-```html
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>My Movie & TV List (TMDb)</title>
-  <meta name="description" content="Add films and TV shows by searching TMDb. Click a result to add it with poster, description and trailer. Mobile-friendly, single file." />
+  <meta name="description" content="Add films and TV shows by searching TMDb. Click a result to add it with poster, description and trailer." />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'><text y='1em' font-size='96'>🎬</text></svg>">
   <style>
     :root {
@@ -93,9 +92,10 @@
 
   <script>
   // ======= CONFIG =======
-  const TMDB_API_KEY = "166bdfecdc09d46826d8662b9627ad27"; // 🔑 Get one free at https://www.themoviedb.org/ (Settings → API)
-  const TMDB_IMG_BASE = "https://image.tmdb.org/t/p/"; // use sizes like w154, w342, w500
-  const LANGUAGE = "en-US"; // change to your language if desired, e.g. "uk-UA"
+  const TMDB_API_KEY = "166bdfecdc09d46826d8662b9627ad27"; // TMDb API Key
+  const TMDB_IMG_BASE = "https://image.tmdb.org/t/p/"; // TMDb image base URL
+  const LANGUAGE = "ru"; // Russian language for TMDb
+  const YOUTUBE_API_KEY = "AIzaSyCUHWrkVFi1UO1y8NKSkWtrT_W1aZpdBDM"; // Замените на ваш YouTube API-ключ
   const SEARCH_DELAY_MS = 350;
 
   // ======= STATE =======
@@ -142,7 +142,24 @@
     return `${TMDB_IMG_BASE}${size}${path}`;
   }
 
-  // ======= API =======
+  // ======= YouTube API =======
+  async function searchYouTubeTrailer(title) {
+    const query = `${encodeURIComponent(title)} трейлер русский`;
+    const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${query}&key=${YOUTUBE_API_KEY}&regionCode=RU&maxResults=1&type=video`;
+    try {
+      const response = await fetch(url);
+      const data = await response.json();
+      if (data.items && data.items.length > 0) {
+        return `https://www.youtube.com/watch?v=${data.items[0].id.videoId}`;
+      }
+      return null;
+    } catch (error) {
+      console.warn('YouTube API error:', error);
+      return null;
+    }
+  }
+
+  // ======= TMDb API =======
   async function searchMulti(q) {
     if (!TMDB_API_KEY || TMDB_API_KEY.includes('PASTE')) {
       return { Error: 'Missing TMDb API key. Create a free account at themoviedb.org, then paste your key at the top of this file.' };
@@ -151,13 +168,11 @@
     const res = await fetch(url);
     const data = await res.json();
     if (!data || !data.results) return { results: [] };
-    // filter out people, keep movies & tv
     const items = data.results.filter(r => r.media_type === 'movie' || r.media_type === 'tv').slice(0, 12);
     return { results: items };
   }
 
   async function fetchDetails(type, id) {
-    // append videos to get trailers in one call
     const url = apiUrl(`/${type}/${id}`, { append_to_response: 'videos' });
     const res = await fetch(url);
     return await res.json();
@@ -197,7 +212,6 @@
       const genres = (m.genres || []).slice(0,3).map(g=>`<span class="pill">${esc(g.name)}</span>`).join('');
       const rating = (m.vote_average && m.vote_count > 0) ? `TMDb ${Number(m.vote_average).toFixed(1)}` : '';
       const runtime = (m.runtime ? `${m.runtime} min` : (Array.isArray(m.episode_run_time) && m.episode_run_time[0]) ? `${m.episode_run_time[0]} min` : '');
-      const trailerUrl = bestTrailerUrl(m);
       return `<article class="card">
         <img class="poster" src="${esc(poster)}" alt="Poster for ${esc(title)}" loading="lazy" />
         <div class="content">
@@ -212,20 +226,36 @@
             <span class="pill">${esc(m.media_type.toUpperCase())}</span>
           </div>
           <div class="row" style="gap:8px">
-            ${trailerUrl ? `<a class="btn" href="${esc(trailerUrl)}" target="_blank" rel="noreferrer">Trailer ▶</a>` : `<button class="btn" disabled title="Trailer not available">Trailer ▶</button>`}
+            <a class="btn" id="trailer-${esc(key)}" href="#" target="_blank" rel="noreferrer">Trailer ▶</a>
             <button class="btn-ghost" data-remove="${esc(key)}" title="Remove">Remove</button>
           </div>
         </div>
       </article>`;
     }).join('');
+    // Установка обработчиков для кнопок трейлеров
+    state.order.forEach(key => {
+      const btn = document.getElementById(`trailer-${key}`);
+      if (btn) {
+        btn.addEventListener('click', async (e) => {
+          e.preventDefault();
+          const m = state.items[key];
+          const title = m.title || m.name || '';
+          const trailerUrl = await searchYouTubeTrailer(title);
+          if (trailerUrl) {
+            window.open(trailerUrl, '_blank');
+          } else {
+            alert('Русскоязычный трейлер не найден.');
+          }
+        });
+      }
+    });
   }
 
   function bestTrailerUrl(details) {
     const vids = details?.videos?.results || [];
-    // Prefer Official YouTube Trailer, else any YouTube Trailer/Teaser
-    const pick = vids.find(v => v.site === 'YouTube' && v.type === 'Trailer' && v.official) 
-      || vids.find(v => v.site === 'YouTube' && v.type === 'Trailer')
-      || vids.find(v => v.site === 'YouTube' && v.type === 'Teaser');
+    const pick = vids.find(v => v.site === 'YouTube' && v.type === 'Trailer' && v.official && v.iso_639_1 === 'ru')
+      || vids.find(v => v.site === 'YouTube' && v.type === 'Trailer' && v.iso_639_1 === 'ru')
+      || vids.find(v => v.site === 'YouTube' && v.type === 'Teaser' && v.iso_639_1 === 'ru');
     return pick ? `https://www.youtube.com/watch?v=${pick.key}` : '';
   }
 
@@ -233,7 +263,7 @@
     const key = `${type}_${id}`;
     if (state.items[key]) return;
     const m = await fetchDetails(type, id);
-    if (m && !m.status_code) { // TMDb returns status_code on error
+    if (m && !m.status_code) {
       m.media_type = type;
       state.items[key] = m;
       state.order.unshift(key);
@@ -304,4 +334,3 @@
   </script>
 </body>
 </html>
-```
