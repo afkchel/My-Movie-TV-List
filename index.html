@@ -95,7 +95,7 @@
   const TMDB_API_KEY = "166bdfecdc09d46826d8662b9627ad27"; // TMDb API Key
   const TMDB_IMG_BASE = "https://image.tmdb.org/t/p/"; // TMDb image base URL
   const LANGUAGE = "ru"; // Russian language for TMDb
-  const YOUTUBE_API_KEY = "AIzaSyCUHWrkVFi1UO1y8NKSkWtrT_W1aZpdBDM"; // Замените на ваш YouTube API-ключ
+  const YOUTUBE_API_KEY = "YOUR_API_KEY"; // Замените на ваш YouTube API-ключ
   const SEARCH_DELAY_MS = 350;
 
   // ======= STATE =======
@@ -144,19 +144,37 @@
 
   // ======= YouTube API =======
   async function searchYouTubeTrailer(title) {
-    const query = `${encodeURIComponent(title)} трейлер русский`;
-    const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${query}&key=${YOUTUBE_API_KEY}&regionCode=RU&maxResults=1&type=video`;
-    try {
-      const response = await fetch(url);
-      const data = await response.json();
-      if (data.items && data.items.length > 0) {
-        return `https://www.youtube.com/watch?v=${data.items[0].id.videoId}`;
+    const queries = [
+      `${encodeURIComponent(title)} трейлер русский`,
+      `${encodeURIComponent(title)} официальный трейлер`,
+      `${encodeURIComponent(title)} trailer russian`
+    ];
+    for (const query of queries) {
+      const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${query}&key=${YOUTUBE_API_KEY}&maxResults=1&type=video`;
+      console.log('YouTube API request URL:', url);
+      try {
+        const response = await fetch(url, { mode: 'cors' });
+        console.log('Response status:', response.status);
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Error details:', errorText);
+          // Проверяем коды ошибок, указывающие на исчерпание лимита или доступ
+          if (response.status === 403 || response.status === 429) {
+            console.warn('YouTube API unavailable, falling back to TMDb');
+            return null; // Переход к TMDb
+          }
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        const data = await response.json();
+        console.log('YouTube API response:', data);
+        if (data.items && data.items.length > 0) {
+          return `https://www.youtube.com/watch?v=${data.items[0].id.videoId}`;
+        }
+      } catch (error) {
+        console.error('YouTube API error:', error);
       }
-      return null;
-    } catch (error) {
-      console.warn('YouTube API error:', error);
-      return null;
     }
+    return null;
   }
 
   // ======= TMDb API =======
@@ -202,6 +220,27 @@
     state.selectedIndex = -1; state.suggestions = [];
   }
 
+  function bestTrailerUrl(details) {
+    const vids = details?.videos?.results || [];
+    const pick = vids.find(v => v.site === 'YouTube' && v.type === 'Trailer' && v.official)
+      || vids.find(v => v.site === 'YouTube' && v.type === 'Trailer')
+      || vids.find(v => v.site === 'YouTube' && v.type === 'Teaser');
+    return pick ? `https://www.youtube.com/watch?v=${pick.key}` : '';
+  }
+
+  async function addItem(type, id) {
+    const key = `${type}_${id}`;
+    if (state.items[key]) return;
+    const m = await fetchDetails(type, id);
+    if (m && !m.status_code) {
+      m.media_type = type;
+      state.items[key] = m;
+      state.order.unshift(key);
+      save();
+      renderList();
+    }
+  }
+
   function renderList() {
     if (!state.order.length) { el.list.innerHTML = `<div class="card wide"><div class="content"><h3 style="margin:6px 0 6px">Your list is empty</h3><p class="subtitle">Search above and click a result to add a movie or TV show.</p></div></div>`; return; }
     el.list.innerHTML = state.order.map(key => {
@@ -240,36 +279,19 @@
           e.preventDefault();
           const m = state.items[key];
           const title = m.title || m.name || '';
-          const trailerUrl = await searchYouTubeTrailer(title);
+          let trailerUrl = await searchYouTubeTrailer(title);
+          if (!trailerUrl) {
+            console.log('YouTube failed, trying TMDb...');
+            trailerUrl = bestTrailerUrl(m);
+          }
           if (trailerUrl) {
             window.open(trailerUrl, '_blank');
           } else {
-            alert('Русскоязычный трейлер не найден.');
+            alert('Трейлер не найден.');
           }
         });
       }
     });
-  }
-
-  function bestTrailerUrl(details) {
-    const vids = details?.videos?.results || [];
-    const pick = vids.find(v => v.site === 'YouTube' && v.type === 'Trailer' && v.official && v.iso_639_1 === 'ru')
-      || vids.find(v => v.site === 'YouTube' && v.type === 'Trailer' && v.iso_639_1 === 'ru')
-      || vids.find(v => v.site === 'YouTube' && v.type === 'Teaser' && v.iso_639_1 === 'ru');
-    return pick ? `https://www.youtube.com/watch?v=${pick.key}` : '';
-  }
-
-  async function addItem(type, id) {
-    const key = `${type}_${id}`;
-    if (state.items[key]) return;
-    const m = await fetchDetails(type, id);
-    if (m && !m.status_code) {
-      m.media_type = type;
-      state.items[key] = m;
-      state.order.unshift(key);
-      save();
-      renderList();
-    }
   }
 
   // ======= EVENT WIRING =======
