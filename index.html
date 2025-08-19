@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>My Movie & TV List (TMDb)</title>
-  <meta name="description" content="Add films and TV shows by searching TMDb. Click a result to add it with poster, description and trailer." />
+  <title>Список шедевров (TMDb)</title>
+  <meta name="description" content="Добро пожаловать на список не проходняков, составленный Леонидом" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'><text y='1em' font-size='96'>🎬</text></svg>">
   <style>
     :root {
@@ -66,8 +66,8 @@
       <div class="title">
         <div style="font-size:26px">🎬</div>
         <div>
-          <h1>My Movie & TV List</h1>
-          <p class="subtitle">Type to search TMDb. Click a result to add it with poster, description, and trailer.</p>
+          <h1>Список шедевров</h1>
+          <p class="subtitle">Добро пожаловать на список не проходняков, составленный Леонидом</p>
         </div>
       </div>
       <div class="searchbar" role="combobox" aria-expanded="false" aria-owns="suggestion-list">
@@ -242,117 +242,4 @@
   }
 
   function renderList() {
-    if (!state.order.length) { el.list.innerHTML = `<div class="card wide"><div class="content"><h3 style="margin:6px 0 6px">Your list is empty</h3><p class="subtitle">Search above and click a result to add a movie or TV show.</p></div></div>`; return; }
-    el.list.innerHTML = state.order.map(key => {
-      const m = state.items[key];
-      const poster = m.poster_path ? imgUrl(m.poster_path, 'w500') : '';
-      const title = m.title || m.name || '';
-      const year = (m.release_date || m.first_air_date || '').slice(0,4) || '';
-      const genres = (m.genres || []).slice(0,3).map(g=>`<span class="pill">${esc(g.name)}</span>`).join('');
-      const rating = (m.vote_average && m.vote_count > 0) ? `TMDb ${Number(m.vote_average).toFixed(1)}` : '';
-      const runtime = (m.runtime ? `${m.runtime} min` : (Array.isArray(m.episode_run_time) && m.episode_run_time[0]) ? `${m.episode_run_time[0]} min` : '');
-      return `<article class="card">
-        <img class="poster" src="${esc(poster)}" alt="Poster for ${esc(title)}" loading="lazy" />
-        <div class="content">
-          <h3 style="margin:0 0 6px">${esc(title)} ${year ? `<span class=\"pill\" style=\"margin-left:6px\">${esc(year)}</span>`:''}</h3>
-          <div class="row">${genres}</div>
-          <p style="color:var(--muted); line-height:1.5; margin: 8px 0 0">${esc(m.overview || 'No description.')}</p>
-        </div>
-        <div class="actions">
-          <div class="row" style="gap:8px">
-            ${rating ? `<span class="pill">${esc(rating)}</span>` : ''}
-            ${runtime ? `<span class="pill">${esc(runtime)}</span>` : ''}
-            <span class="pill">${esc(m.media_type.toUpperCase())}</span>
-          </div>
-          <div class="row" style="gap:8px">
-            <a class="btn" id="trailer-${esc(key)}" href="#" target="_blank" rel="noreferrer">Trailer ▶</a>
-            <button class="btn-ghost" data-remove="${esc(key)}" title="Remove">Remove</button>
-          </div>
-        </div>
-      </article>`;
-    }).join('');
-    // Установка обработчиков для кнопок трейлеров
-    state.order.forEach(key => {
-      const btn = document.getElementById(`trailer-${key}`);
-      if (btn) {
-        btn.addEventListener('click', async (e) => {
-          e.preventDefault();
-          const m = state.items[key];
-          const title = m.title || m.name || '';
-          let trailerUrl = await searchYouTubeTrailer(title);
-          if (!trailerUrl) {
-            console.log('YouTube failed, trying TMDb...');
-            trailerUrl = bestTrailerUrl(m);
-          }
-          if (trailerUrl) {
-            window.open(trailerUrl, '_blank');
-          } else {
-            alert('Трейлер не найден.');
-          }
-        });
-      }
-    });
-  }
-
-  // ======= EVENT WIRING =======
-  const doSearch = debounce(async () => {
-    const q = el.search.value.trim();
-    if (!q) { closeSuggestions(); return; }
-    const data = await searchMulti(q);
-    if (!data || data.Error) {
-      el.suggestions.innerHTML = `<div class="suggestion" aria-disabled="true">${esc(data?.Error || 'No results')}</div>`;
-      el.suggestions.classList.add('open');
-      return;
-    }
-    openSuggestions(data.results);
-  }, SEARCH_DELAY_MS);
-
-  el.search.addEventListener('input', doSearch);
-  el.search.addEventListener('keydown', (e) => {
-    if (!el.suggestions.classList.contains('open')) return;
-    const max = state.suggestions.length - 1;
-    if (e.key === 'ArrowDown') { e.preventDefault(); state.selectedIndex = Math.min(max, state.selectedIndex + 1); highlight(); }
-    else if (e.key === 'ArrowUp') { e.preventDefault(); state.selectedIndex = Math.max(0, state.selectedIndex - 1); highlight(); }
-    else if (e.key === 'Enter') {
-      if (state.selectedIndex >= 0) {
-        const sel = state.suggestions[state.selectedIndex]; if (sel) addItem(sel.media_type, sel.id);
-      } else if (state.suggestions[0]) {
-        const sel = state.suggestions[0]; addItem(sel.media_type, sel.id);
-      }
-      closeSuggestions();
-      el.search.select();
-    } else if (e.key === 'Escape') { closeSuggestions(); }
-  });
-
-  function highlight() {
-    [...el.suggestions.querySelectorAll('.suggestion')].forEach((n, i) => n.setAttribute('aria-selected', String(i === state.selectedIndex)));
-  }
-
-  el.suggestions.addEventListener('click', (e) => {
-    const item = e.target.closest('.suggestion');
-    if (!item) return;
-    const id = item.getAttribute('data-id');
-    const type = item.getAttribute('data-type');
-    if (id && type) { addItem(type, id); closeSuggestions(); el.search.select(); }
-  });
-
-  document.addEventListener('click', (e) => {
-    if (!document.querySelector('.searchbar').contains(e.target)) closeSuggestions();
-  });
-
-  el.list.addEventListener('click', (e) => {
-    const btn = e.target.closest('[data-remove]');
-    if (!btn) return;
-    const key = btn.getAttribute('data-remove');
-    delete state.items[key];
-    state.order = state.order.filter(x => x !== key);
-    save();
-    renderList();
-  });
-
-  // Initial render
-  load();
-  renderList();
-  </script>
-</body>
-</html>
+    if (!state.order.length) { el.list.innerHTML = `<div class="card wide"><div class="content"><h3 style="margin:6px 0 6px">Your list is empty</h3><p class="subtitle">Search above and click a result to add a movie or TV show.</p></
