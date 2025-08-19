@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>My Movie & TV List (TMDb)</title>
+  <title>Movie & TV List (TMDb)</title>
   <meta name="description" content="Add films and TV shows by searching TMDb. Click a result to add it with poster, description and trailer." />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'><text y='1em' font-size='96'>🎬</text></svg>">
   <style>
@@ -210,7 +210,7 @@
       const title = m.title || m.name || '';
       const year = (m.release_date || m.first_air_date || '').slice(0,4) || '';
       const genres = (m.genres || []).slice(0,3).map(g=>`<span class="pill">${esc(g.name)}</span>`).join('');
-      const rating = (m.vote_average && m.vote_count > 0) ? `TMDb ${Number(m.vote_average).toFixed(1)}` : '';
+      const rating = (m.vote_average && m.vote_count > 0) ? `⭐${Number(m.vote_average).toFixed(1)}` : '';
       const runtime = (m.runtime ? `${m.runtime} min` : (Array.isArray(m.episode_run_time) && m.episode_run_time[0]) ? `${m.episode_run_time[0]} min` : '');
       return `<article class="card">
         <img class="poster" src="${esc(poster)}" alt="Poster for ${esc(title)}" loading="lazy" />
