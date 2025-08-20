@@ -198,15 +198,28 @@
 
     // ======= TMDb API =======
     async function searchMulti(q) {
+      console.log('Searching TMDb with query:', q); // Отладка
       if (!TMDB_API_KEY || TMDB_API_KEY.includes('PASTE')) {
+        console.error('TMDb API key missing or invalid');
         return { Error: 'Missing TMDb API key. Create a free account at themoviedb.org, then paste your key at the top of this file.' };
       }
       const url = apiUrl('/search/multi', { query: q, include_adult: 'false' });
-      const res = await fetch(url);
-      const data = await res.json();
-      if (!data || !data.results) return { results: [] };
-      const items = data.results.filter(r => r.media_type === 'movie' || r.media_type === 'tv').slice(0, 12);
-      return { results: items };
+      console.log('TMDb API URL:', url); // Отладка
+      try {
+        const res = await fetch(url);
+        if (!res.ok) {
+          console.error('TMDb API request failed:', res.status, res.statusText);
+          return { results: [] };
+        }
+        const data = await res.json();
+        console.log('TMDb API response:', data); // Отладка
+        if (!data || !data.results) return { results: [] };
+        const items = data.results.filter(r => r.media_type === 'movie' || r.media_type === 'tv').slice(0, 12);
+        return { results: items };
+      } catch (error) {
+        console.error('TMDb API error:', error);
+        return { results: [] };
+      }
     }
 
     async function fetchDetails(type, id) {
@@ -314,8 +327,10 @@
     // ======= EVENT WIRING =======
     const doSearch = debounce(async () => {
       const q = el.search.value.trim();
+      console.log('doSearch triggered with query:', q); // Отладка
       if (!q) { closeSuggestions(); return; }
       const data = await searchMulti(q);
+      console.log('Search result:', data); // Отладка
       if (!data || data.Error) {
         el.suggestions.innerHTML = `<div class="suggestion" aria-disabled="true">${esc(data?.Error || 'No results')}</div>`;
         el.suggestions.classList.add('open');
