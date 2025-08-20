@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ru">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -33,92 +33,54 @@
       grid-template-rows: auto 1fr auto;
       min-height: 100dvh;
     }
-    header {
-      position: relative;
-      z-index: 50;
-      border-bottom: 1px solid #1f2937;
-      background: rgba(0,0,0,0.6);
-    }
-    header::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: url("https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjoKAzwvFf6l903MjMiBQ5GL-mJAxCKQmVAl0ga_7fnvm4ji-4JxGIHu9HfehT3Qd12iwPjFlTAY3UZb39M6YKrgKVcSGDM0PxFtGVN96DZlXvVgNi0-FdXutpdojsV_89AcoMzm3-5gV8/s1600/a+a+a+piret.jpg") center/cover no-repeat;
-      filter: brightness(0.35);
-      z-index: -1;
-    }
+    header { position: sticky; top: 0; z-index: 50; backdrop-filter: blur(8px); background: color-mix(in lab, var(--bg) 70%, transparent); border-bottom: 1px solid #1f2937; }
     .container { max-width: 980px; margin: 0 auto; padding: 16px }
     .title { display: flex; gap: 12px; align-items: center }
     .title h1 { margin: 0; font-weight: 800; letter-spacing: .2px; font-size: clamp(22px, 5vw, 30px) }
     .subtitle { margin: 6px 0 0; color: var(--muted); font-size: 14px }
     .searchbar { position: relative; margin-top: 14px }
     .searchbar input[type="text"] {
-      width: 100%; padding: 14px 48px 14px 16px;
-      border-radius: 14px; background: var(--panel); color: var(--text);
-      border: 1px solid #1f2937; outline: none; font-size: 16px;
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.02), var(--shadow);
+      width: 100%; padding: 14px 48px 14px 16px; border-radius: 14px; background: var(--panel);
+      color: var(--text); border: 1px solid #1f2937; outline: none; font-size: 16px; box-shadow: inset 0 1px 0 rgba(255,255,255,.02), var(--shadow);
     }
-    .searchbar input:focus {
-      border-color: var(--accent-2);
-      box-shadow: 0 0 0 4px rgba(147,197,253,.12), var(--shadow)
-    }
-    .searchbar .kbd {
-      position:absolute; right:10px; top:50%;
-      transform: translateY(-50%);
-      font: 12px/1 monospace; color: var(--muted); opacity:.9
-    }
+    .searchbar input:focus { border-color: var(--accent-2); box-shadow: 0 0 0 4px rgba(147,197,253,.12), var(--shadow) }
+    .searchbar .kbd { position:absolute; right:10px; top:50%; transform: translateY(-50%); font: 12px/1 monospace; color: var(--muted); opacity:.9 }
+    .suggestions { position: absolute; inset: auto 0 0 0; transform: translateY(100%); background: var(--panel); border: 1px solid #1f2937; border-radius: 12px; margin-top: 8px; max-height: 60dvh; overflow: auto; box-shadow: var(--shadow); display: none; }
+    .suggestions.open { display: block }
+    .suggestion { display: grid; grid-template-columns: 46px 1fr auto; gap: 12px; align-items: center; padding: 10px 12px; cursor: pointer }
+    .suggestion:hover, .suggestion[aria-selected="true"] { background: #0b1220 }
+    .suggestion img { width: 46px; height: 68px; object-fit: cover; border-radius: 8px; background: #0b1220 }
+    .suggestion .meta { display:flex; flex-direction:column; gap:4px }
+    .pill { font-size: 12px; color: var(--muted); padding: 2px 8px; border: 1px solid #374151; border-radius: 999px }
+    main .container { padding-top: 10px }
     .list { display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px }
     @media (max-width: 900px) { .list { grid-template-columns: repeat(6, 1fr) } }
     @media (max-width: 640px) { .list { grid-template-columns: repeat(4, 1fr) } }
-    .card {
-      grid-column: span 4;
-      background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0)), var(--card);
-      border: 1px solid #1f2937;
-      border-radius: var(--radius);
-      overflow: hidden;
-      box-shadow: var(--shadow);
-      display:flex; flex-direction: column
-    }
+    .card { grid-column: span 4; background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0)) , var(--card); border: 1px solid #1f2937; border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); display:flex; flex-direction: column }
+    .card.wide { grid-column: span 6 }
+    @media (max-width: 640px) { .card, .card.wide { grid-column: span 4 } }
     .poster { width: 100%; aspect-ratio: 3 / 4.2; object-fit: cover; background:#0b1220 }
     .content { padding: 12px 14px 16px }
-    .actions {
-      margin-top: auto; display:flex; justify-content: space-between;
-      align-items: center; gap: 8px; padding: 12px 14px;
-      border-top:1px solid #1f2937; background: #0c111b; flex-wrap: wrap
-    }
-    button, .btn {
-      appearance: none;
-      border: 1px solid #2b3443;
-      background: #111827;
-      color: var(--text);
-      padding: 10px 14px;
-      border-radius: 12px;
-      cursor: pointer;
-      font-weight: 600;
-      box-shadow: var(--shadow)
-    }
+    .row { display:flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 6px 0 }
+    .actions { margin-top: auto; display:flex; justify-content: space-between; align-items: center; gap: 8px; padding: 12px 14px; border-top:1px solid #1f2937; background: #0c111b; flex-wrap: wrap }
+    button, .btn { appearance: none; border: 1px solid #2b3443; background: #111827; color: var(--text); padding: 10px 14px; border-radius: 12px; cursor: pointer; font-weight: 600; box-shadow: var(--shadow) }
     button:hover { background: #0f172a; border-color:#3b475a }
     .btn-ghost { background: transparent; border-color: #374151 }
     .btn-danger { border-color: #7f1d1d; background: #1f0f12 }
     .btn-danger:hover { background: #2b0f12; border-color:#991b1b }
-    /* confirm modal */
-    .confirm-modal {
-      position: fixed; inset: 0;
-      background: rgba(0,0,0,0.7);
-      display: flex; align-items: center; justify-content: center;
-      z-index: 1000; display:none;
+    footer { color: var(--muted); font-size: 12px; border-top: 1px solid #1f2937 }
+    a { color: var(--accent-2); text-decoration: none }
+    a:hover { text-decoration: underline }
+    /* Confirm overlay */
+    .confirm-overlay {
+      position: fixed; inset:0; background: rgba(0,0,0,.7);
+      display:flex; align-items:center; justify-content:center;
+      z-index:1000;
     }
     .confirm-box {
-      background: var(--card);
-      border: 1px solid #1f2937;
-      border-radius: var(--radius);
-      padding: 20px;
-      box-shadow: var(--shadow);
-      max-width: 400px; width: 100%;
-      text-align: center;
+      background: var(--card); padding:20px; border-radius:12px; box-shadow: var(--shadow); max-width:300px; text-align:center;
     }
-    .confirm-buttons { display:flex; justify-content: space-between; margin-top: 16px; gap: 12px }
-    .confirm-buttons button { flex:1 }
+    .confirm-actions { display:flex; justify-content:space-between; margin-top:16px; gap:12px; }
   </style>
 </head>
 <body>
@@ -131,88 +93,106 @@
           <p class="subtitle">Добро пожаловать на список не проходняков, составленный Леонидом</p>
         </div>
       </div>
-      <div class="searchbar">
-        <input id="search" type="text" placeholder="Search for a film or show…" autocomplete="off"/>
+      <div class="searchbar" role="combobox" aria-expanded="false" aria-owns="suggestion-list">
+        <input id="search" type="text" placeholder="Search for a film or show…" autocomplete="off" aria-autocomplete="list" aria-controls="suggestion-list" />
         <span class="kbd">Enter ↵</span>
-        <div id="suggestions" class="suggestions"></div>
+        <div id="suggestions" class="suggestions" role="listbox" aria-label="Search suggestions"></div>
       </div>
     </div>
   </header>
   <main>
     <div class="container">
-      <div id="list" class="list"></div>
+      <div id="list" class="list" aria-live="polite"></div>
     </div>
   </main>
   <footer>
     <div class="container">
-      Data from TMDb. This product uses the TMDb API but is not endorsed or certified by TMDb.
+      Data from TMDb (The Movie Database). This product uses the TMDb API but is not endorsed or certified by TMDb.
     </div>
   </footer>
-
-  <!-- confirm modal -->
-  <div id="confirmModal" class="confirm-modal">
-    <div class="confirm-box">
-      <div id="confirmText">Вы уверены?</div>
-      <div class="confirm-buttons">
-        <button id="confirmYes" class="btn-danger">Да</button>
-        <button id="confirmNo" class="btn">Нет</button>
-      </div>
-    </div>
-  </div>
-
   <script type="module">
-    // simplified for demo: only delete confirm
-    const state = { items:{}, order:[] }
-    const el = {
-      list: document.getElementById("list"),
-      confirmModal: document.getElementById("confirmModal"),
-      confirmText: document.getElementById("confirmText"),
-      confirmYes: document.getElementById("confirmYes"),
-      confirmNo: document.getElementById("confirmNo")
+    const TMDB_API_KEY = "166bdfecdc09d46826d8662b9627ad27";
+    const TMDB_IMG_BASE = "https://image.tmdb.org/t/p/";
+    const LANGUAGE = "ru";
+    const YOUTUBE_API_KEY = "AIzaSyCUHWrkVFi1UO1y8NKSkWtrT_W1aZpdBDM";
+    const SEARCH_DELAY_MS = 350;
+    const ALLOWED_DEVICE_ID = "30a62442-ecd5-4abf-9b51-22b34ae85d2e|Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36";
+
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+    import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDu8R38EkqOxBDkcgfnYf5mBTCosQsOoGA",
+      authDomain: "my-movie-tv-lis.firebaseapp.com",
+      projectId: "my-movie-tv-lis",
+      storageBucket: "my-movie-tv-lis.firebasestorage.app",
+      messagingSenderId: "470112487115",
+      appId: "1:470112487115:web:a0dba8f948514eaf3e3d4e",
+      measurementId: "G-JLCYQH6XEE"
     };
-    let pendingDeleteKey = null;
+
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+
+    const state = { items:{}, order:[], selectedIndex:-1, suggestions:[] };
+
+    const el = { search: document.getElementById('search'), suggestions: document.getElementById('suggestions'), list: document.getElementById('list') };
+
+    const debounce = (fn, ms) => { let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args),ms);} };
+    const esc = (s)=>String(s||"").replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    function save() { set(ref(database,'tmdbList'),{items:state.items,order:state.order}).catch(e=>console.error(e)); }
+    function load() { onValue(ref(database,'tmdbList'),snap=>{const d=snap.val(); if(d){state.items=d.items||{}; state.order=d.order||[]; renderList();}},e=>console.error(e)); }
+    function imgUrl(path,size='w500'){ if(!path)return''; return `${TMDB_IMG_BASE}${size}${path}`; }
+    async function fetchDetails(type,id){ const url=`https://api.themoviedb.org/3/${type}/${id}?api_key=${TMDB_API_KEY}&language=${LANGUAGE}&append_to_response=videos`; const r=await fetch(url); return await r.json(); }
 
     function renderList(){
-      if(!state.order.length){
-        el.list.innerHTML="<div>Список пуст</div>";return;
-      }
-      el.list.innerHTML=state.order.map(k=>{
-        const m=state.items[k];
+      if(!state.order.length){ el.list.innerHTML=`<div class="card wide"><div class="content"><h3>Your list is empty</h3></div></div>`; return;}
+      el.list.innerHTML=state.order.map(key=>{
+        const m=state.items[key];
+        const poster=m.poster_path?imgUrl(m.poster_path):'';
+        const title=m.title||m.name||'';
+        const year=(m.release_date||m.first_air_date||'').slice(0,4)||'';
         return `<article class="card">
-          <img class="poster" src="${m.poster}" />
-          <div class="content"><h3>${m.title}</h3></div>
+          <img class="poster" src="${esc(poster)}" alt="Poster" />
+          <div class="content"><h3>${esc(title)} ${year?`<span class="pill">${year}</span>`:''}</h3></div>
           <div class="actions">
-            <button class="btn-ghost" data-remove="${k}">Удалить</button>
+            <div class="row"><span class="pill">${esc(m.media_type.toUpperCase())}</span></div>
+            <div class="row">
+              <a class="btn" id="trailer-${esc(key)}" href="#">Трейлер</a>
+              <button class="btn-ghost" data-remove="${esc(key)}" title="Удалить">Удалить</button>
+            </div>
           </div>
         </article>`;
-      }).join("");
+      }).join('');
     }
 
-    // тестовые данные
-    state.items["movie1"]={title:"Матрица",poster:"https://image.tmdb.org/t/p/w500/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg"};
-    state.items["movie2"]={title:"Интерстеллар",poster:"https://image.tmdb.org/t/p/w500/rAiYTfKGqDCRIIqo664sY9XZIvQ.jpg"};
-    state.order=["movie1","movie2"];
-    renderList();
+    function showConfirm(message,onYes){
+      const overlay=document.createElement('div');
+      overlay.className='confirm-overlay';
+      overlay.innerHTML=`<div class="confirm-box"><div>${message}</div>
+        <div class="confirm-actions">
+          <button class="btn-danger" id="confirm-yes">Да</button>
+          <button class="btn" id="confirm-no">Нет</button>
+        </div></div>`;
+      document.body.appendChild(overlay);
+      overlay.querySelector('#confirm-yes').onclick=()=>{ onYes(); document.body.removeChild(overlay); };
+      overlay.querySelector('#confirm-no').onclick=()=>{ document.body.removeChild(overlay); };
+    }
 
-    el.list.addEventListener("click",e=>{
-      const btn=e.target.closest("[data-remove]");
-      if(!btn)return;
-      const key=btn.getAttribute("data-remove");
-      const movie=state.items[key];
-      pendingDeleteKey=key;
-      el.confirmText.textContent=`Вы уверены что хотите удалить "${movie.title}" из списка?`;
-      el.confirmModal.style.display="flex";
-    });
-    el.confirmYes.addEventListener("click",()=>{
-      if(pendingDeleteKey){
-        delete state.items[pendingDeleteKey];
-        state.order=state.order.filter(x=>x!==pendingDeleteKey);
-        renderList();
-      }
-      el.confirmModal.style.display="none";
-    });
-    el.confirmNo.addEventListener("click",()=>{
-      el.confirmModal.style.display="none";
+    document.addEventListener('DOMContentLoaded',()=>{
+      load(); renderList();
+      el.list.addEventListener('click',e=>{
+        const btn=e.target.closest('[data-remove]');
+        if(!btn)return;
+        const key=btn.getAttribute('data-remove');
+        const m=state.items[key];
+        const title=m.title||m.name||'';
+        showConfirm(`Вы уверены что хотите удалить "${title}" из списка?`,()=>{
+          delete state.items[key];
+          state.order=state.order.filter(x=>x!==key);
+          save(); renderList();
+        });
+      });
     });
   </script>
 </body>
