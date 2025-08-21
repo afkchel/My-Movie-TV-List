@@ -32,7 +32,16 @@
       grid-template-rows: auto 1fr auto;
       min-height: 100dvh;
     }  
-    header { position: sticky; top: 0; z-index: 50; backdrop-filter: blur(8px); background: color-mix(in lab, var(--bg) 70%, transparent); border-bottom: 1px solid #1f2937; }
+    header {
+      position: fixed; /* Changed from sticky to fixed */
+      top: 0;
+      left: 0; /* Ensure it spans the full width */
+      width: 100%; /* Ensure it spans the full width */
+      z-index: 50;
+      backdrop-filter: blur(8px);
+      background: color-mix(in lab, var(--bg) 70%, transparent);
+      border-bottom: 1px solid #1f2937;
+    }
     .container { max-width: 980px; margin: 0 auto; padding: 16px }
     .title { display: flex; gap: 12px; align-items: center }
     .title h1 { margin: 0; font-weight: 800; letter-spacing: .2px; font-size: clamp(22px, 5vw, 30px) }
@@ -48,7 +57,7 @@
     .suggestion img { width: 46px; height: 68px; object-fit: cover; border-radius: 8px; background: #0b1220 }
     .suggestion .meta { display:flex; flex-direction:column; gap:4px }
     .pill { font-size: 12px; color: var(--muted); padding: 2px 8px; border: 1px solid #374151; border-radius: 999px }
-    main .container { padding-top: 10px }
+    main .container { padding-top: 80px }
     .list { display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px }
     @media (max-width: 900px) { .list { grid-template-columns: repeat(6, 1fr) } }
     @media (max-width: 640px) { .list { grid-template-columns: repeat(4, 1fr) } }
