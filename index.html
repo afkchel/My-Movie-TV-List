@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Список шедевров (TMDb)</title>
   <meta name="description" content="Добро пожаловать на список не проходняков, составленный Леонидом" />
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'><text y='1em' font-size='96'>🎬</text></svg>">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'><text y='1em' font-size='96'>🎬</text></svg>" />
   <style>
     :root {
       --bg: #0b0c0f; /* deep blue-black */
@@ -33,7 +33,7 @@
       grid-template-rows: auto 1fr auto;
       min-height: 100dvh;
     }
-    header { /* Убраны sticky и z-index */
+    header { /* Статичная шапка */
       backdrop-filter: blur(8px);
       background: color-mix(in lab, var(--bg) 70%, transparent);
       border-bottom: 1px solid #1f2937;
@@ -45,13 +45,25 @@
     .searchbar { position: relative; margin-top: 14px }
     .searchbar input[type="text"] { width: 100%; padding: 14px 48px 14px 16px; border-radius: 14px; background: var(--panel); color: var(--text); border: 1px solid #1f2937; outline: none; font-size: 16px; box-shadow: inset 0 1px 0 rgba(255,255,255,.02), var(--shadow); }
     .searchbar input:focus { border-color: var(--accent-2); box-shadow: 0 0 0 4px rgba(147,197,253,.12), var(--shadow) }
-    .searchbar .kbd { position:absolute; right:10px; top:50%; transform: translateY(-50%); font: 12px/1 monospace; color: var(--muted); opacity:.9 }
-    .suggestions { position: absolute; inset: auto 0 0 0; transform: translateY(100%); background: var(--panel); border: 1px solid #1f2937; border-radius: 12px; margin-top: 8px; max-height: 60dvh; overflow: auto; box-shadow: var(--shadow); display: none; }
+    .searchbar .kbd { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font: 12px/1 monospace; color: var(--muted); opacity: .9 }
+    .suggestions {
+      position: absolute;
+      inset: auto 0 0 0; /* Закрепляем сверху */
+      transform: translateY(-100%); /* Смещаем вверх на высоту поля ввода */
+      background: var(--panel);
+      border: 1px solid #1f2937;
+      border-radius: 12px;
+      margin-top: -8px; /* Корректировка для лучшего наложения */
+      max-height: 60dvh;
+      overflow: auto;
+      box-shadow: var(--shadow);
+      display: none;
+    }
     .suggestions.open { display: block }
     .suggestion { display: grid; grid-template-columns: 46px 1fr auto; gap: 12px; align-items: center; padding: 10px 12px; cursor: pointer }
     .suggestion:hover, .suggestion[aria-selected="true"] { background: #0b1220 }
     .suggestion img { width: 46px; height: 68px; object-fit: cover; border-radius: 8px; background: #0b1220 }
-    .suggestion .meta { display:flex; flex-direction:column; gap:4px }
+    .suggestion .meta { display: flex; flex-direction: column; gap: 4px }
     .pill { font-size: 12px; color: var(--muted); padding: 2px 8px; border: 1px solid #374151; border-radius: 999px }
     main .container { padding-top: 10px }
     .list { display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px }
@@ -73,22 +85,24 @@
     }
     .card.wide { grid-column: span 6 }
     @media (max-width: 640px) { .card, .card.wide { grid-column: span 4 } }
-    .poster { width: 100%; aspect-ratio: 3 / 4.2; object-fit: cover; background:#0b1220 }
+    .poster { width: 100%; aspect-ratio: 3 / 4.2; object-fit: cover; background: #0b1220 }
     .content { padding: 12px 14px 16px }
     .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 6px 0 }
     .actions { margin-top: auto; display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 12px 14px; border-top: 1px solid #1f2937; background: #0c111b; flex-wrap: wrap }
-    button, .btn {
+    button, .btn, a.btn { /* Добавляем a.btn для унификации размера */
       appearance: none;
       border: 1px solid #2b3443;
       background: #111827;
       color: var(--text);
-      padding: 10px 14px; /* Убедимся, что размер совпадает с .btn */
+      padding: 10px 14px; /* Единый размер для всех кнопок */
       border-radius: 12px;
       cursor: pointer;
       font-weight: 600;
       box-shadow: var(--shadow);
+      text-decoration: none; /* Убираем подчеркивание для ссылок */
+      display: inline-block; /* Убеждаемся, что ссылка ведет себя как кнопка */
     }
-    button:hover, .btn:hover { background: #0f172a; border-color: #3b475a }
+    button:hover, .btn:hover, a.btn:hover { background: #0f172a; border-color: #3b475a }
     .btn-ghost { background: transparent; border-color: #374151 }
     .btn-danger { border-color: #7f1d1d; background: #1f0f12 }
     .btn-danger:hover { background: #2b0f12; border-color: #991b1b }
@@ -473,7 +487,7 @@
             </div>
             <div class="row" style="gap:8px">
               <a class="btn" id="trailer-${esc(key)}" href="${esc(trailerUrl || '#')}" target="_blank" rel="noreferrer">Трейлер</a>
-              <button class="btn btn-ghost" data-remove="${esc(key)}" title="Удалить">Удалить</button> <!-- Изменен на btn для совпадения размеров -->
+              <button class="btn btn-ghost" data-remove="${esc(key)}" title="Удалить">Удалить</button>
               ${isAllowedDevice ? `<button class="btn-ghost" data-edit="${esc(key)}" title="Редактировать трейлер">⚙️</button>` : ''}
             </div>
           </div>
