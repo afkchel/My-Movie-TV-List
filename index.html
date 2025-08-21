@@ -8,7 +8,7 @@
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'><text y='1em' font-size='96'>🎬</text></svg>" />
   <style>
     :root {
-      --bg: #0b0c0f; /* deep blue-black */
+      --bg: #0b0c0f;
       --panel: #12141a;
       --text: #e6e8f0;
       --muted: #9aa3b2;
@@ -19,7 +19,7 @@
       --card: #0f172a;
       --shadow: 0 10px 30px rgba(0,0,0,.35);
       --radius: 16px;
-      --glow: 0 0 15px rgba(255, 255, 255, 0.1); /* Слабый белый свет */
+      --glow: 0 0 15px rgba(255, 255, 255, 0.1);
     }
     * { box-sizing: border-box }
     html, body { height: 100% }
@@ -27,17 +27,13 @@
       margin: 0;
       font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
       background: radial-gradient(1000px 600px at 10% -10%, rgba(147,197,253,.15), transparent), radial-gradient(800px 500px at 110% 10%, rgba(110,231,183,.12), transparent), var(--bg);
-      background-attachment: fixed; /* Фиксируем фон при скроллинге */
+      background-attachment: fixed;
       color: var(--text);
       display: grid;
       grid-template-rows: auto 1fr auto;
       min-height: 100dvh;
     }
-    header { /* Статичная шапка */
-      backdrop-filter: blur(8px);
-      background: color-mix(in lab, var(--bg) 70%, transparent);
-      border-bottom: 1px solid #1f2937;
-    }
+    header { backdrop-filter: blur(8px); background: color-mix(in lab, var(--bg) 70%, transparent); border-bottom: 1px solid #1f2937; }
     .container { max-width: 980px; margin: 0 auto; padding: 16px }
     .title { display: flex; gap: 12px; align-items: center }
     .title h1 { margin: 0; font-weight: 800; letter-spacing: .2px; font-size: clamp(22px, 5vw, 30px) }
@@ -48,16 +44,18 @@
     .searchbar .kbd { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font: 12px/1 monospace; color: var(--muted); opacity: .9 }
     .suggestions {
       position: absolute;
-      inset: auto 0 0 0; /* Закрепляем сверху */
-      transform: translateY(-100%); /* Смещаем вверх на высоту поля ввода */
+      top: 0; /* Фиксируем сверху поля ввода */
+      left: 0;
+      right: 0;
+      transform: translateY(-100%); /* Смещаем вверх */
       background: var(--panel);
       border: 1px solid #1f2937;
       border-radius: 12px;
-      margin-top: -8px; /* Корректировка для лучшего наложения */
+      margin-top: -8px;
       max-height: 60dvh;
       overflow: auto;
       box-shadow: var(--shadow);
-      z-index: 1000; /* Увеличиваем z-index для видимости над другими элементами */
+      z-index: 1000; /* Высокий z-index */
       display: none;
     }
     .suggestions.open { display: block }
@@ -76,34 +74,34 @@
       border: 1px solid #1f2937;
       border-radius: var(--radius);
       overflow: hidden;
-      box-shadow: var(--shadow), var(--glow); /* Добавляем свечение */
+      box-shadow: var(--shadow), var(--glow);
       display: flex;
       flex-direction: column;
-      transition: box-shadow 0.3s ease; /* Плавный переход для свечения */
+      transition: box-shadow 0.3s ease;
     }
-    .card:hover {
-      box-shadow: var(--shadow), 0 0 20px rgba(255, 255, 255, 0.2); /* Усиление свечения при наведении */
-    }
+    .card:hover { box-shadow: var(--shadow), 0 0 20px rgba(255, 255, 255, 0.2); }
     .card.wide { grid-column: span 6 }
     @media (max-width: 640px) { .card, .card.wide { grid-column: span 4 } }
     .poster { width: 100%; aspect-ratio: 3 / 4.2; object-fit: cover; background: #0b1220 }
     .content { padding: 12px 14px 16px }
     .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 6px 0 }
     .actions { margin-top: auto; display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 12px 14px; border-top: 1px solid #1f2937; background: #0c111b; flex-wrap: wrap }
-    button, a.btn { /* Унифицируем стили для button и a.btn */
+    button, a.btn {
       appearance: none;
       border: 1px solid #2b3443;
       background: #111827;
       color: var(--text);
-      padding: 10px 14px; /* Единый размер */
+      padding: 10px 14px;
       border-radius: 12px;
       cursor: pointer;
       font-weight: 600;
       box-shadow: var(--shadow);
-      text-decoration: none; /* Убираем подчеркивание для ссылок */
-      display: inline-block; /* Убеждаемся, что ссылка ведет себя как кнопка */
-      min-width: 80px; /* Минимальная ширина для единообразия */
-      text-align: center; /* Центрируем текст */
+      text-decoration: none;
+      display: inline-block;
+      min-width: 90px; /* Увеличенная минимальная ширина */
+      text-align: center;
+      font-size: 14px; /* Единый размер текста */
+      line-height: 1; /* Устранение различий в высоте */
     }
     button:hover, a.btn:hover { background: #0f172a; border-color: #3b475a }
     .btn-ghost { background: transparent; border-color: #374151 }
@@ -112,119 +110,23 @@
     footer { color: var(--muted); font-size: 12px; border-top: 1px solid #1f2937 }
     a { color: var(--accent-2); text-decoration: none }
     a:hover { text-decoration: underline }
-
-    /* Стили для модального окна */
-    .modal {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.5);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 100;
-    }
-
-    .modal-content {
-      background: var(--card);
-      padding: 10px 20px 20px;
-      border-radius: var(--radius);
-      border: 1px solid #1f2937;
-      box-shadow: var(--shadow);
-      width: 90%;
-      max-width: 400px;
-      text-align: center;
-    }
-
-    .modal-content p {
-      margin: 0 0 15px;
-      color: var(--muted);
-      font-size: 16px;
-    }
-
-    .modal-actions, .edit-actions {
-      display: flex;
-      justify-content: center;
-      gap: 10px;
-    }
-
+    .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); display: flex; justify-content: center; align-items: center; z-index: 100; }
+    .modal-content { background: var(--card); padding: 10px 20px 20px; border-radius: var(--radius); border: 1px solid #1f2937; box-shadow: var(--shadow); width: 90%; max-width: 400px; text-align: center; }
+    .modal-content p { margin: 0 0 15px; color: var(--muted); font-size: 16px; }
+    .modal-actions, .edit-actions { display: flex; justify-content: center; gap: 10px; }
     @media (max-width: 640px) {
-      .modal-content {
-        max-width: 90%;
-        padding: 15px;
-      }
-      .modal-content p {
-        font-size: 14px;
-      }
-      .modal-actions button, .modal-actions a.btn {
-        padding: 8px 12px;
-        font-size: 14px;
-      }
+      .modal-content { max-width: 90%; padding: 15px; }
+      .modal-content p { font-size: 14px; }
+      .modal-actions button, .modal-actions a.btn { padding: 8px 12px; font-size: 14px; }
     }
-
-    .edit-modal-content {
-      background: var(--card);
-      padding: 20px;
-      border-radius: var(--radius);
-      border: 1px solid #1f2937;
-      box-shadow: var(--shadow);
-      width: 90%;
-      max-width: 500px;
-      text-align: center;
-    }
-
-    .edit-modal-content h3 {
-      margin: 0 0 15px;
-      color: var(--text);
-    }
-
-    .edit-modal-content input {
-      width: 100%;
-      padding: 10px;
-      margin-bottom: 15px;
-      border: 1px solid #1f2937;
-      border-radius: 8px;
-      background: var(--panel);
-      color: var(--text);
-      font-size: 14px;
-    }
-
-    .edit-modal-content input:focus {
-      border-color: var(--accent-2);
-      box-shadow: 0 0 0 2px rgba(147,197,253,.12);
-    }
-
-    /* Стили для спиннера загрузки */
-    .loader {
-      border: 8px solid #f3f3f3; /* Светлый бордер */
-      border-top: 8px solid #6ee7b7; /* Акцентный цвет */
-      border-radius: 50%;
-      width: 50px;
-      height: 50px;
-      animation: spin 1s linear infinite;
-      margin: 0 auto;
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-    }
-
-    @keyframes spin {
-      0% { transform: translate(-50%, -50%) rotate(0deg); }
-      100% { transform: translate(-50%, -50%) rotate(360deg); }
-    }
-
-    #list.loading {
-      display: none;
-    }
-
-    .loader-container {
-      position: relative;
-      min-height: 200px;
-      width: 100%;
-    }
+    .edit-modal-content { background: var(--card); padding: 20px; border-radius: var(--radius); border: 1px solid #1f2937; box-shadow: var(--shadow); width: 90%; max-width: 500px; text-align: center; }
+    .edit-modal-content h3 { margin: 0 0 15px; color: var(--text); }
+    .edit-modal-content input { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #1f2937; border-radius: 8px; background: var(--panel); color: var(--text); font-size: 14px; }
+    .edit-modal-content input:focus { border-color: var(--accent-2); box-shadow: 0 0 0 2px rgba(147,197,253,.12); }
+    .loader { border: 8px solid #f3f3f3; border-top: 8px solid #6ee7b7; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 0 auto; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+    @keyframes spin { 0% { transform: translate(-50%, -50%) rotate(0deg); } 100% { transform: translate(-50%, -50%) rotate(360deg); } }
+    #list.loading { display: none; }
+    .loader-container { position: relative; min-height: 200px; width: 100%; }
   </style>
 </head>
 <body>
@@ -244,7 +146,6 @@
       </div>
     </div>
   </header>
-
   <main>
     <div class="container">
       <div class="loader-container">
@@ -253,14 +154,11 @@
       </div>
     </div>
   </main>
-
   <footer>
     <div class="container">
       Data from TMDb (The Movie Database). This product uses the TMDb API but is not endorsed or certified by TMDb.
     </div>
   </footer>
-
-  <!-- Модальное окно для подтверждения удаления -->
   <div id="modal" class="modal" style="display: none;">
     <div class="modal-content">
       <p>Вы уверены, что хотите удалить <strong id="modal-title"></strong>?</p>
@@ -270,8 +168,6 @@
       </div>
     </div>
   </div>
-
-  <!-- Модальное окно для редактирования ссылки -->
   <div id="edit-modal" class="modal" style="display: none;">
     <div class="edit-modal-content">
       <h3>Редактировать ссылку на трейлер</h3>
@@ -282,21 +178,17 @@
       </div>
     </div>
   </div>
-
   <script type="module">
-    // ======= CONFIG =======
-    const TMDB_API_KEY = "166bdfecdc09d46826d8662b9627ad27"; // TMDb API Key
-    const TMDB_IMG_BASE = "https://image.tmdb.org/t/p/"; // TMDb image base URL
-    const LANGUAGE = "ru"; // Russian language for TMDb
-    const YOUTUBE_API_KEY = "AIzaSyCUHWrkVFi1UO1y8NKSkWtrT_W1aZpdBDM"; // Замените на ваш YouTube API-ключ
+    const TMDB_API_KEY = "166bdfecdc09d46826d8662b9627ad27";
+    const TMDB_IMG_BASE = "https://image.tmdb.org/t/p/";
+    const LANGUAGE = "ru";
+    const YOUTUBE_API_KEY = "AIzaSyCUHWrkVFi1UO1y8NKSkWtrT_W1aZpdBDM";
     const SEARCH_DELAY_MS = 350;
     const ALLOWED_DEVICE_ID = "30a62442-ecd5-4abf-9b51-22b34ae85d2e|Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36";
 
-    // Import the functions you need from the SDKs you need
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
     import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
 
-    // Your web app's Firebase configuration
     const firebaseConfig = {
       apiKey: "AIzaSyDu8R38EkqOxBDkcgfnYf5mBTCosQsOoGA",
       authDomain: "my-movie-tv-lis.firebaseapp.com",
@@ -307,19 +199,16 @@
       measurementId: "G-JLCYQH6XEE"
     };
 
-    // Initialize Firebase
     const app = initializeApp(firebaseConfig);
     const database = getDatabase(app);
 
-    // ======= STATE =======
     const state = {
-      items: /** @type {Record<string, any>} */ ({}), // key `${type}_${id}` -> details
-      order: /** @type {string[]} */ ([]),
+      items: {},
+      order: [],
       selectedIndex: -1,
       suggestions: [],
     };
 
-    // ======= ELEMENTS =======
     const el = {
       search: document.getElementById('search'),
       suggestions: document.getElementById('suggestions'),
@@ -327,22 +216,20 @@
       loader: document.getElementById('loader'),
     };
 
-    // ======= UTIL =======
-    const debounce = (fn, ms) => { let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); } };
+    const debounce = (fn, ms) => { let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); }; };
     const esc = (s) => String(s || "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
     const byId = (id) => document.getElementById(id);
 
-    // Генерация или получение уникального ID устройства
     function getDeviceId() {
       let deviceId = localStorage.getItem('deviceId');
       if (!deviceId) {
-        deviceId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        deviceId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
           const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
           return v.toString(16);
         });
         localStorage.setItem('deviceId', deviceId);
       }
-      return deviceId + '|' + navigator.userAgent; // Комбинируем с userAgent для уникальности
+      return deviceId + '|' + navigator.userAgent;
     }
 
     function save() {
@@ -357,7 +244,6 @@
           if (data) {
             state.items = data.items || {};
             state.order = data.order || [];
-            // Инициализация customTrailerUrl для существующих записей
             Object.keys(state.items).forEach(key => {
               if (!state.items[key].customTrailerUrl) {
                 const m = state.items[key];
@@ -385,7 +271,6 @@
       return `${TMDB_IMG_BASE}${size}${path}`;
     }
 
-    // ======= YouTube API =======
     async function searchYouTubeTrailer(title) {
       const query = `${encodeURIComponent(title)} трейлер русский`;
       const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${query}&key=${YOUTUBE_API_KEY}&regionCode=RU&maxResults=1&type=video`;
@@ -402,15 +287,13 @@
       }
     }
 
-    // ======= TMDb API =======
     async function searchMulti(q) {
-      console.log('Searching TMDb with query:', q); // Отладка
+      console.log('Searching TMDb with query:', q);
       if (!TMDB_API_KEY || TMDB_API_KEY.includes('PASTE')) {
         console.error('TMDb API key missing or invalid');
-        return { Error: 'Missing TMDb API key. Create a free account at themoviedb.org, then paste your key at the top of this file.' };
+        return { Error: 'Missing TMDb API key.' };
       }
       const url = apiUrl('/search/multi', { query: q, include_adult: 'false' });
-      console.log('TMDb API URL:', url); // Отладка
       try {
         const res = await fetch(url);
         if (!res.ok) {
@@ -418,7 +301,6 @@
           return { results: [] };
         }
         const data = await res.json();
-        console.log('TMDb API response:', data); // Отладка
         if (!data || !data.results) return { results: [] };
         const items = data.results.filter(r => r.media_type === 'movie' || r.media_type === 'tv').slice(0, 12);
         return { results: items };
@@ -451,6 +333,7 @@
       }).join('');
       el.suggestions.classList.add('open');
       document.querySelector('.searchbar').setAttribute('aria-expanded', 'true');
+      console.log('Suggestions opened:', items.length); // Отладка
     }
     function closeSuggestions() {
       el.suggestions.classList.remove('open');
@@ -535,13 +418,12 @@
       }
     }
 
-    // ======= EVENT WIRING =======
     const doSearch = debounce(async () => {
       const q = el.search.value.trim();
-      console.log('doSearch triggered with query:', q); // Отладка
+      console.log('doSearch triggered with query:', q);
       if (!q) { closeSuggestions(); return; }
       const data = await searchMulti(q);
-      console.log('Search result:', data); // Отладка
+      console.log('Search result:', data);
       if (!data || data.Error) {
         el.suggestions.innerHTML = `<div class="suggestion" aria-disabled="true">${esc(data?.Error || 'No results')}</div>`;
         el.suggestions.classList.add('open');
@@ -550,9 +432,9 @@
       openSuggestions(data.results);
     }, SEARCH_DELAY_MS);
 
-    // Проверка устройства и инициализация
     document.addEventListener('DOMContentLoaded', () => {
       const currentDeviceId = getDeviceId();
+      console.log('Device ID:', currentDeviceId, 'Allowed ID:', ALLOWED_DEVICE_ID); // Отладка
       const isAllowedDevice = currentDeviceId === ALLOWED_DEVICE_ID;
 
       if (!isAllowedDevice) {
@@ -596,16 +478,13 @@
       el.list.addEventListener('click', (e) => {
         const deleteBtn = e.target.closest('[data-remove]');
         if (deleteBtn) {
-          console.log('Delete button clicked'); // Отладка
           const key = deleteBtn.getAttribute('data-remove');
           const m = state.items[key];
           const title = m.title || m.name || 'Неизвестное произведение';
-
           const modal = document.getElementById('modal');
           const modalTitle = document.getElementById('modal-title');
           modalTitle.textContent = title;
           modal.style.display = 'flex';
-
           document.getElementById('confirm-delete').onclick = () => {
             delete state.items[key];
             state.order = state.order.filter(x => x !== key);
@@ -613,50 +492,27 @@
             renderList();
             modal.style.display = 'none';
           };
-
-          document.getElementById('cancel-delete').onclick = () => {
-            modal.style.display = 'none';
-          };
-
-          modal.onclick = (e) => {
-            if (e.target === modal) {
-              modal.style.display = 'none';
-            }
-          };
+          document.getElementById('cancel-delete').onclick = () => { modal.style.display = 'none'; };
+          modal.onclick = (e) => { if (e.target === modal) modal.style.display = 'none'; };
         }
-
         const editBtn = e.target.closest('[data-edit]');
         if (editBtn && isAllowedDevice) {
-          console.log('Edit button clicked'); // Отладка
           const key = editBtn.getAttribute('data-edit');
           const m = state.items[key];
-          if (!m) {
-            console.error('Item not found for key:', key);
-            return;
-          }
+          if (!m) { console.error('Item not found for key:', key); return; }
           const currentTrailer = m.customTrailerUrl || '';
-
           const editModal = document.getElementById('edit-modal');
           const trailerInput = document.getElementById('trailer-link-input');
           trailerInput.value = currentTrailer;
           editModal.style.display = 'flex';
-
           document.getElementById('save-trailer').onclick = () => {
             m.customTrailerUrl = trailerInput.value.trim() || null;
             save();
             renderList();
             editModal.style.display = 'none';
           };
-
-          document.getElementById('cancel-edit').onclick = () => {
-            editModal.style.display = 'none';
-          };
-
-          editModal.onclick = (e) => {
-            if (e.target === editModal) {
-              editModal.style.display = 'none';
-            }
-          };
+          document.getElementById('cancel-edit').onclick = () => { editModal.style.display = 'none'; };
+          editModal.onclick = (e) => { if (e.target === editModal) editModal.style.display = 'none'; };
         }
       });
 
