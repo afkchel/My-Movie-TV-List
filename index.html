@@ -19,10 +19,20 @@
       --card: #0f172a;
       --shadow: 0 10px 30px rgba(0,0,0,.35);
       --radius: 16px;
+      --glow: 0 0 15px rgba(255, 255, 255, 0.1); /* Слабый белый свет */
     }
     * { box-sizing: border-box }
     html, body { height: 100% }
-    body { margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; background: radial-gradient(1000px 600px at 10% -10%, rgba(147,197,253,.15), transparent), radial-gradient(800px 500px at 110% 10%, rgba(110,231,183,.12), transparent), var(--bg); color: var(--text); display: grid; grid-template-rows: auto 1fr auto; min-height: 100dvh; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      background: radial-gradient(1000px 600px at 10% -10%, rgba(147,197,253,.15), transparent), radial-gradient(800px 500px at 110% 10%, rgba(110,231,183,.12), transparent), var(--bg);
+      background-attachment: fixed; /* Фиксируем фон при скроллинге */
+      color: var(--text);
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      min-height: 100dvh;
+    }
     header { position: sticky; top: 0; z-index: 50; backdrop-filter: blur(8px); background: color-mix(in lab, var(--bg) 70%, transparent); border-bottom: 1px solid #1f2937; }
     .container { max-width: 980px; margin: 0 auto; padding: 16px }
     .title { display: flex; gap: 12px; align-items: center }
@@ -43,18 +53,41 @@
     .list { display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px }
     @media (max-width: 900px) { .list { grid-template-columns: repeat(6, 1fr) } }
     @media (max-width: 640px) { .list { grid-template-columns: repeat(4, 1fr) } }
-    .card { grid-column: span 4; background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0)) , var(--card); border: 1px solid #1f2937; border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); display:flex; flex-direction: column }
+    .card {
+      grid-column: span 4;
+      background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0)) , var(--card);
+      border: 1px solid #1f2937;
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow), var(--glow); /* Добавляем свечение */
+      display: flex;
+      flex-direction: column;
+      transition: box-shadow 0.3s ease; /* Плавный переход для свечения */
+    }
+    .card:hover {
+      box-shadow: var(--shadow), 0 0 20px rgba(255, 255, 255, 0.2); /* Усиление свечения при наведении */
+    }
     .card.wide { grid-column: span 6 }
     @media (max-width: 640px) { .card, .card.wide { grid-column: span 4 } }
     .poster { width: 100%; aspect-ratio: 3 / 4.2; object-fit: cover; background:#0b1220 }
     .content { padding: 12px 14px 16px }
-    .row { display:flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 6px 0 }
-    .actions { margin-top: auto; display:flex; justify-content: space-between; align-items: center; gap: 8px; padding: 12px 14px; border-top:1px solid #1f2937; background: #0c111b; flex-wrap: wrap }
-    button, .btn { appearance: none; border: 1px solid #2b3443; background: #111827; color: var(--text); padding: 10px 14px; border-radius: 12px; cursor: pointer; font-weight: 600; box-shadow: var(--shadow) }
-    button:hover { background: #0f172a; border-color:#3b475a }
+    .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 6px 0 }
+    .actions { margin-top: auto; display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 12px 14px; border-top: 1px solid #1f2937; background: #0c111b; flex-wrap: wrap }
+    button, .btn {
+      appearance: none;
+      border: 1px solid #2b3443;
+      background: #111827;
+      color: var(--text);
+      padding: 10px 14px; /* Убедимся, что размер совпадает с .btn */
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: 600;
+      box-shadow: var(--shadow);
+    }
+    button:hover, .btn:hover { background: #0f172a; border-color: #3b475a }
     .btn-ghost { background: transparent; border-color: #374151 }
     .btn-danger { border-color: #7f1d1d; background: #1f0f12 }
-    .btn-danger:hover { background: #2b0f12; border-color:#991b1b }
+    .btn-danger:hover { background: #2b0f12; border-color: #991b1b }
     footer { color: var(--muted); font-size: 12px; border-top: 1px solid #1f2937 }
     a { color: var(--accent-2); text-decoration: none }
     a:hover { text-decoration: underline }
@@ -436,7 +469,7 @@
             </div>
             <div class="row" style="gap:8px">
               <a class="btn" id="trailer-${esc(key)}" href="${esc(trailerUrl || '#')}" target="_blank" rel="noreferrer">Трейлер</a>
-              <button class="btn-ghost" data-remove="${esc(key)}" title="Удалить">Удалить</button>
+              <button class="btn btn-ghost" data-remove="${esc(key)}" title="Удалить">Удалить</button> <!-- Изменен на btn для совпадения размеров -->
               ${isAllowedDevice ? `<button class="btn-ghost" data-edit="${esc(key)}" title="Редактировать трейлер">⚙️</button>` : ''}
             </div>
           </div>
