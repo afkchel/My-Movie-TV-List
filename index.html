@@ -537,75 +537,76 @@
         document.addEventListener('click', (e) => {
           if (!document.querySelector('.searchbar').contains(e.target)) closeSuggestions();
         });
-
-        el.list.addEventListener('click', (e) => {
-          const deleteBtn = e.target.closest('[data-remove]');
-          if (deleteBtn) {
-            const key = deleteBtn.getAttribute('data-remove');
-            const m = state.items[key];
-            const title = m.title || m.name || 'Неизвестное произведение';
-
-            const modal = document.getElementById('modal');
-            const modalTitle = document.getElementById('modal-title');
-            modalTitle.textContent = title;
-            modal.style.display = 'flex';
-
-            document.getElementById('confirm-delete').onclick = () => {
-              delete state.items[key];
-              state.order = state.order.filter(x => x !== key);
-              save();
-              renderList();
-              modal.style.display = 'none';
-            };
-
-            document.getElementById('cancel-delete').onclick = () => {
-              modal.style.display = 'none';
-            };
-
-            modal.onclick = (e) => {
-              if (e.target === modal) {
-                modal.style.display = 'none';
-              }
-            };
-          }
-
-          const editBtn = e.target.closest('[data-edit]');
-          if (editBtn && isAllowedDevice) {
-            console.log('Edit button clicked'); // Отладка
-            const key = editBtn.getAttribute('data-edit');
-            const m = state.items[key];
-            if (!m) {
-              console.error('Item not found for key:', key);
-              return;
-            }
-            const currentTrailer = m.customTrailerUrl || '';
-
-            const editModal = document.getElementById('edit-modal');
-            const trailerInput = document.getElementById('trailer-link-input');
-            trailerInput.value = currentTrailer;
-            editModal.style.display = 'flex';
-
-            document.getElementById('save-trailer').onclick = () => {
-              m.customTrailerUrl = trailerInput.value.trim() || null;
-              save();
-              renderList();
-              editModal.style.display = 'none';
-            };
-
-            document.getElementById('cancel-edit').onclick = () => {
-              editModal.style.display = 'none';
-            };
-
-            editModal.onclick = (e) => {
-              if (e.target === editModal) {
-                editModal.style.display = 'none';
-              }
-            };
-          }
-        });
-
-        load().then(renderList);
       }
+
+      el.list.addEventListener('click', (e) => {
+        const deleteBtn = e.target.closest('[data-remove]');
+        if (deleteBtn) {
+          console.log('Delete button clicked'); // Отладка
+          const key = deleteBtn.getAttribute('data-remove');
+          const m = state.items[key];
+          const title = m.title || m.name || 'Неизвестное произведение';
+
+          const modal = document.getElementById('modal');
+          const modalTitle = document.getElementById('modal-title');
+          modalTitle.textContent = title;
+          modal.style.display = 'flex';
+
+          document.getElementById('confirm-delete').onclick = () => {
+            delete state.items[key];
+            state.order = state.order.filter(x => x !== key);
+            save();
+            renderList();
+            modal.style.display = 'none';
+          };
+
+          document.getElementById('cancel-delete').onclick = () => {
+            modal.style.display = 'none';
+          };
+
+          modal.onclick = (e) => {
+            if (e.target === modal) {
+              modal.style.display = 'none';
+            }
+          };
+        }
+
+        const editBtn = e.target.closest('[data-edit]');
+        if (editBtn && isAllowedDevice) {
+          console.log('Edit button clicked'); // Отладка
+          const key = editBtn.getAttribute('data-edit');
+          const m = state.items[key];
+          if (!m) {
+            console.error('Item not found for key:', key);
+            return;
+          }
+          const currentTrailer = m.customTrailerUrl || '';
+
+          const editModal = document.getElementById('edit-modal');
+          const trailerInput = document.getElementById('trailer-link-input');
+          trailerInput.value = currentTrailer;
+          editModal.style.display = 'flex';
+
+          document.getElementById('save-trailer').onclick = () => {
+            m.customTrailerUrl = trailerInput.value.trim() || null;
+            save();
+            renderList();
+            editModal.style.display = 'none';
+          };
+
+          document.getElementById('cancel-edit').onclick = () => {
+            editModal.style.display = 'none';
+          };
+
+          editModal.onclick = (e) => {
+            if (e.target === editModal) {
+              editModal.style.display = 'none';
+            }
+          };
+        }
+      });
+
+      load().then(renderList);
     });
   </script>
 </body>
