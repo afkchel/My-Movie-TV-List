@@ -126,6 +126,36 @@
       border-color: var(--accent-2);
       box-shadow: 0 0 0 2px rgba(147,197,253,.12);
     }
+
+    /* Стили для спиннера загрузки */
+    .loader {
+      border: 8px solid #f3f3f3; /* Светлый бордер */
+      border-top: 8px solid #6ee7b7; /* Акцентный цвет */
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    @keyframes spin {
+      0% { transform: translate(-50%, -50%) rotate(0deg); }
+      100% { transform: translate(-50%, -50%) rotate(360deg); }
+    }
+
+    #list.loading {
+      display: none;
+    }
+
+    .loader-container {
+      position: relative;
+      min-height: 200px;
+      width: 100%;
+    }
   </style>
 </head>
 <body>
@@ -148,7 +178,10 @@
 
   <main>
     <div class="container">
-      <div id="list" class="list" aria-live="polite"></div>
+      <div class="loader-container">
+        <div id="loader" class="loader"></div>
+        <div id="list" class="list loading" aria-live="polite"></div>
+      </div>
     </div>
   </main>
 
@@ -222,6 +255,7 @@
       search: document.getElementById('search'),
       suggestions: document.getElementById('suggestions'),
       list: document.getElementById('list'),
+      loader: document.getElementById('loader'),
     };
 
     // ======= UTIL =======
@@ -248,21 +282,26 @@
     }
 
     function load() {
-      onValue(ref(database, 'tmdbList'), (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-          state.items = data.items || {};
-          state.order = data.order || [];
-          // Инициализация customTrailerUrl для существующих записей
-          Object.keys(state.items).forEach(key => {
-            if (!state.items[key].customTrailerUrl) {
-              const m = state.items[key];
-              state.items[key].customTrailerUrl = bestTrailerUrl(m) || '';
-            }
-          });
-          renderList();
-        }
-      }, (error) => console.error('Ошибка загрузки:', error));
+      return new Promise((resolve) => {
+        onValue(ref(database, 'tmdbList'), (snapshot) => {
+          const data = snapshot.val();
+          if (data) {
+            state.items = data.items || {};
+            state.order = data.order || [];
+            // Инициализация customTrailerUrl для существующих записей
+            Object.keys(state.items).forEach(key => {
+              if (!state.items[key].customTrailerUrl) {
+                const m = state.items[key];
+                state.items[key].customTrailerUrl = bestTrailerUrl(m) || '';
+              }
+            });
+          }
+          resolve();
+        }, (error) => {
+          console.error('Ошибка загрузки:', error);
+          resolve();
+        });
+      });
     }
 
     function apiUrl(path, params = {}) {
@@ -351,6 +390,8 @@
     }
 
     function renderList() {
+      el.list.classList.remove('loading');
+      el.loader.style.display = 'none';
       if (!state.order.length) { 
         el.list.innerHTML = `<div class="card wide"><div class="content"><h3 style="margin:6px 0 6px">Your list is empty</h3><p class="subtitle">Search above and click a result to add a movie or TV show.</p></div></div>`; 
         return; 
@@ -447,8 +488,7 @@
 
       if (!isAllowedDevice) {
         document.querySelector('.searchbar').style.display = 'none';
-        load();
-        renderList();
+        load().then(renderList);
       } else {
         el.search.addEventListener('input', doSearch);
         el.search.addEventListener('keydown', (e) => {
@@ -549,8 +589,7 @@
           }
         });
 
-        load();
-        renderList();
+        load().then(renderList);
       }
     });
   </script>
