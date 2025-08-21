@@ -33,7 +33,11 @@
       grid-template-rows: auto 1fr auto;
       min-height: 100dvh;
     }
-    header { position: sticky; top: 0; z-index: 50; backdrop-filter: blur(8px); background: color-mix(in lab, var(--bg) 70%, transparent); border-bottom: 1px solid #1f2937; }
+    header { /* Убраны sticky и z-index */
+      backdrop-filter: blur(8px);
+      background: color-mix(in lab, var(--bg) 70%, transparent);
+      border-bottom: 1px solid #1f2937;
+    }
     .container { max-width: 980px; margin: 0 auto; padding: 16px }
     .title { display: flex; gap: 12px; align-items: center }
     .title h1 { margin: 0; font-weight: 800; letter-spacing: .2px; font-size: clamp(22px, 5vw, 30px) }
