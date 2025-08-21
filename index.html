@@ -381,7 +381,7 @@
             <div class="row" style="gap:8px">
               <a class="btn" id="trailer-${esc(key)}" href="${esc(trailerUrl || '#')}" target="_blank" rel="noreferrer">Трейлер</a>
               <button class="btn-ghost" data-remove="${esc(key)}" title="Удалить">Удалить</button>
-              ${isAllowedDevice ? '<button class="btn-ghost" data-edit="${esc(key)}" title="Редактировать трейлер">⚙️</button>' : ''}
+              ${isAllowedDevice ? `<button class="btn-ghost" data-edit="${esc(key)}" title="Редактировать трейлер">⚙️</button>` : ''}
             </div>
           </div>
         </article>`;
@@ -516,9 +516,13 @@
 
           const editBtn = e.target.closest('[data-edit]');
           if (editBtn && isAllowedDevice) {
+            console.log('Edit button clicked'); // Отладка
             const key = editBtn.getAttribute('data-edit');
             const m = state.items[key];
-            if (!m) return; // Защита от undefined
+            if (!m) {
+              console.error('Item not found for key:', key);
+              return;
+            }
             const currentTrailer = m.customTrailerUrl || '';
 
             const editModal = document.getElementById('edit-modal');
