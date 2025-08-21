@@ -83,20 +83,24 @@
       display: inline-block;
       vertical-align: middle;
       text-align: center;
-      line-height: 1.5; /* Match <a> vertical spacing */
-      padding: 10px 14px;
+      line-height: 1.5;
+      padding: 10px 14px; /* Base padding for all btn-ghost elements */
       border-radius: 12px;
       color: var(--text);
       text-decoration: none;
       font-weight: 600;
       box-sizing: border-box;
       min-width: 80px;
-      font-size: 16px;
+      font-size: 16px; /* Ensure base font size */
+    }
+    
+    a.btn-ghost {
+      font-family: Arial, sans-serif; /* Set font to Arial for <a> elements */
     }
     
     button.btn-ghost {
-      padding: 11px 15px; /* Increase padding to match <a> frame */
-      line-height: 1.6; /* Adjust to match <a> vertical spacing */
+      padding: 10px 14px; /* Match padding with <a> btn-ghost */
+      line-height: 1.5; /* Ensure consistent line-height */
     }
     
     .btn-ghost:hover {
