@@ -460,7 +460,7 @@
               <span class="pill">${esc(m.media_type.toUpperCase())}</span>
             </div>
             <div class="row" style="gap:8px">
-              <a class="btn" id="trailer-${esc(key)}" href="${esc(trailerUrl || '#')}" target="_blank" rel="noreferrer">Трейлер</a>
+              <a class="btn-ghost" id="trailer-${esc(key)}" href="${esc(trailerUrl || '#')}" target="_blank" rel="noreferrer">Трейлер</a>
               <button class="btn-ghost" data-remove="${esc(key)}" title="Удалить">Удалить</button>
               ${isAllowedDevice ? `<button class="btn-ghost" data-edit="${esc(key)}" title="Редактировать трейлер">⚙️</button>` : ''}
             </div>
