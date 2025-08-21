@@ -52,7 +52,16 @@
     .list { display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px }
     @media (max-width: 900px) { .list { grid-template-columns: repeat(6, 1fr) } }
     @media (max-width: 640px) { .list { grid-template-columns: repeat(4, 1fr) } }
-    .card { grid-column: span 4; background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0)) , var(--card); border: 1px solid #1f2937; border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); display:flex; flex-direction: column }
+
+    .card {
+      grid-column: span 4;
+      background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0)) , var(--card);
+      border: 1px solid #1f2937; border-radius: var(--radius); overflow: hidden;
+      box-shadow: var(--shadow); display:flex; flex-direction: column;
+      transition: transform .18s ease, box-shadow .18s ease;
+      will-change: transform;
+    }
+    .sortable .card { cursor: grab }
     .card.wide { grid-column: span 6 }
     @media (max-width: 640px) { .card, .card.wide { grid-column: span 4 } }
     .poster { width: 100%; aspect-ratio: 3 / 4.2; object-fit: cover; background:#0b1220 }
@@ -61,13 +70,19 @@
     .actions { margin-top: auto; display:flex; justify-content: space-between; align-items: center; gap: 8px; padding: 12px 14px; border-top:1px solid #1f2937; background: #0c111b; flex-wrap: wrap }
     button, .btn { appearance: none; border: 1px solid #2b3443; background: #111827; color: var(--text); padding: 10px 14px; border-radius: 12px; cursor: pointer; font-weight: 600; box-shadow: var(--shadow) }
     button:hover { background: #0f172a; border-color:#3b475a }
-    .btn-ghost { background: transparent; border: 1px solid #374151; display: inline-flex; align-items:center; justify-content:center; vertical-align: middle; text-align: center; line-height: 1.5; padding: 10px 14px; border-radius: 12px; color: var(--text); text-decoration: none; font-weight: 600; box-sizing: border-box; min-width: 80px; font-size: 16px }
+    .btn-ghost {
+      background: transparent; border: 1px solid #374151; display: inline-flex; align-items:center; justify-content:center;
+      vertical-align: middle; text-align: center; line-height: 1.5; padding: 10px 14px; border-radius: 12px; color: var(--text);
+      text-decoration: none; font-weight: 600; box-sizing: border-box; min-width: 80px; font-size: 16px
+    }
     .btn-ghost:hover { background: #0f172a; border-color: #3b475a }
     .btn-danger { border-color: #7f1d1d; background: #1f0f12 }
     .btn-danger:hover { background: #2b0f12; border-color:#991b1b }
     footer { color: var(--muted); font-size: 12px; border-top: 1px solid #1f2937 }
     a { color: var(--accent-2); text-decoration: none }
     a:hover { text-decoration: underline }
+
+    /* Модалки */
     .modal { position: fixed; inset:0; background: rgba(0, 0, 0, 0.5); display: none; justify-content: center; align-items: center; z-index: 100 }
     .modal-content { background: var(--card); padding: 10px 20px 20px; border-radius: var(--radius); border: 1px solid #1f2937; box-shadow: var(--shadow); width: 90%; max-width: 400px; text-align: center }
     .modal-content p { margin: 0 0 15px; color: var(--muted); font-size: 16px }
@@ -81,10 +96,16 @@
     .edit-modal-content h3 { margin: 0 0 15px; color: var(--text) }
     .edit-modal-content input { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #1f2937; border-radius: 8px; background: var(--panel); color: var(--text); font-size: 14px }
     .edit-modal-content input:focus { border-color: var(--accent-2); box-shadow: 0 0 0 2px rgba(147,197,253,.12) }
+
+    /* Лоадер */
     .loader { border: 8px solid #f3f3f3; border-top: 8px solid #6ee7b7; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 0 auto; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) }
     @keyframes spin { 0% { transform: translate(-50%, -50%) rotate(0deg) } 100% { transform: translate(-50%, -50%) rotate(360deg) } }
     #list.loading { display: none }
     .loader-container { position: relative; min-height: 200px; width: 100% }
+
+    /* DnD визуальные состояния */
+    body.noselect { user-select: none }
+    .card.dragging { opacity: .6; cursor: grabbing; box-shadow: 0 16px 40px rgba(0,0,0,.55) }
   </style>
 </head>
 <body>
@@ -120,7 +141,7 @@
     </div>
   </footer>
 
-  <!-- Модальное окно для подтверждения удаления -->
+  <!-- Подтверждение удаления -->
   <div id="modal" class="modal">
     <div class="modal-content">
       <p>Вы уверены, что хотите удалить <strong id="modal-title"></strong>?</p>
@@ -131,7 +152,7 @@
     </div>
   </div>
 
-  <!-- Модальное окно для редактирования ссылки -->
+  <!-- Редактирование трейлера -->
   <div id="edit-modal" class="modal">
     <div class="edit-modal-content">
       <h3>Редактировать ссылку на трейлер</h3>
@@ -213,6 +234,9 @@
     }
     const allowedDevice = getDeviceId() === ALLOWED_DEVICE_ID;
 
+    // Make list visibly sortable for allowed device
+    if (allowedDevice) el.list.classList.add('sortable');
+
     // ======= API HELPERS =======
     function apiUrl(path, params = {}) {
       const base = new URL('https://api.themoviedb.org/3' + path);
@@ -224,7 +248,7 @@
 
     // ======= YOUTUBE =======
     async function searchYouTubeTrailer(title) {
-      const q = `${encodeURIComponent(title)} %D1%82%D1%80%D0%B5%D0%B9%D0%BB%D0%B5%D1%80 %D1%80%D1%83%D1%81%D1%81%D0%BA%D0%B8%D0%B9`;
+      const q = `${encodeURIComponent(title)} трейлер русский`;
       const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${q}&key=${YOUTUBE_API_KEY}&regionCode=RU&maxResults=1&type=video`;
       try {
         const res = await fetch(url);
@@ -278,7 +302,6 @@
         if (data) {
           state.items = data.items || {};
           state.order = data.order || [];
-          // Инициализация customTrailerUrl
           for (const k of Object.keys(state.items)) {
             const m = state.items[k];
             if (!m.customTrailerUrl) m.customTrailerUrl = bestTrailerUrl(m) || '';
@@ -321,7 +344,7 @@
       const genres = (m.genres||[]).slice(0,3).map(g=>`<span class="pill">${esc(g.name)}</span>`).join('');
       const rating = (m.vote_average && m.vote_count>0) ? `⭐${Number(m.vote_average).toFixed(1)}` : '';
       const runtime = (m.runtime ? `${m.runtime} min` : (Array.isArray(m.episode_run_time) && m.episode_run_time[0]) ? `${m.episode_run_time[0]} min` : '');
-      return `<article class="card">
+      return `<article class="card" draggable="${allowedDevice}" data-key="${esc(key)}" aria-grabbed="false">
         <img class="poster" src="${esc(poster)}" alt="Poster for ${esc(title)}" loading="lazy" />
         <div class="content">
           <h3 style="margin:0 0 6px">${esc(title)} ${year ? `<span class=\"pill\" style=\"margin-left:6px\">${esc(year)}</span>`:''}</h3>
@@ -401,7 +424,7 @@
       el.editModal.addEventListener('click', backdrop);
     }
 
-    // ======= EVENTS =======
+    // ======= SEARCH EVENTS =======
     const doSearch = debounce(async () => {
       const q = el.search.value.trim();
       if (!q) { closeSuggestions(); return; }
@@ -418,6 +441,103 @@
       $$('.suggestion', el.suggestions).forEach((n, i) => n.setAttribute('aria-selected', String(i===state.selectedIndex)));
     }
 
+    // ======= DRAG & DROP (только разрешённое устройство) =======
+    let dragEl = null;
+
+    function setDragImage(e) {
+      // Прозрачный drag-image, чтобы не мешал
+      const img = new Image();
+      img.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"></svg>';
+      e.dataTransfer?.setDragImage(img, 0, 0);
+    }
+
+    function getNearestCard(container, x, y) {
+      const cards = [...container.querySelectorAll('.card:not(.dragging)')];
+      if (!cards.length) return null;
+      let nearest = null;
+      let minDist = Infinity;
+      for (const c of cards) {
+        const r = c.getBoundingClientRect();
+        const cx = r.left + r.width/2;
+        const cy = r.top + r.height/2;
+        const dx = cx - x;
+        const dy = cy - y;
+        const dist = dx*dx + dy*dy;
+        if (dist < minDist) { minDist = dist; nearest = c; }
+      }
+      return nearest;
+    }
+
+    function captureRects(container) {
+      const map = new Map();
+      container.querySelectorAll('.card').forEach(el => map.set(el, el.getBoundingClientRect()));
+      return map;
+    }
+
+    function animateFlip(container, beforeMap) {
+      const afterMap = new Map();
+      container.querySelectorAll('.card').forEach(el => afterMap.set(el, el.getBoundingClientRect()));
+      // Применяем FLIP
+      beforeMap.forEach((before, el) => {
+        const after = afterMap.get(el);
+        if (!after) return;
+        const dx = before.left - after.left;
+        const dy = before.top - after.top;
+        if (dx || dy) {
+          el.style.transform = `translate(${dx}px, ${dy}px)`;
+          el.getBoundingClientRect(); // force reflow
+          requestAnimationFrame(() => {
+            el.style.transform = '';
+          });
+        }
+      });
+    }
+
+    function initDnD() {
+      if (!allowedDevice) return;
+      const container = el.list;
+
+      container.addEventListener('dragstart', (e) => {
+        const card = e.target.closest('.card');
+        if (!card) return;
+        dragEl = card;
+        dragEl.classList.add('dragging');
+        dragEl.setAttribute('aria-grabbed', 'true');
+        document.body.classList.add('noselect');
+        setDragImage(e);
+      });
+
+      container.addEventListener('dragend', () => {
+        if (!dragEl) return;
+        dragEl.classList.remove('dragging');
+        dragEl.setAttribute('aria-grabbed', 'false');
+        dragEl = null;
+        document.body.classList.remove('noselect');
+        // Сохраняем новый порядок
+        state.order = [...container.querySelectorAll('.card')].map(el => el.getAttribute('data-key'));
+        save();
+      });
+
+      container.addEventListener('dragover', (e) => {
+        if (!dragEl) return;
+        e.preventDefault();
+        const before = captureRects(container);
+        const nearest = getNearestCard(container, e.clientX, e.clientY);
+        if (nearest) {
+          // Вставляем перед ближайшей карточкой
+          if (nearest !== dragEl) {
+            container.insertBefore(dragEl, nearest);
+            animateFlip(container, before);
+          }
+        } else {
+          // Если карточек нет или не нашли — кидаем в конец
+          container.appendChild(dragEl);
+          animateFlip(container, before);
+        }
+      });
+    }
+
+    // ======= BOOT =======
     document.addEventListener('DOMContentLoaded', () => {
       if (!allowedDevice) {
         el.searchbar.style.display = 'none';
@@ -452,7 +572,7 @@
         });
       }
 
-      // Делегирование действий в списке
+      // Делегирование кликов по карточкам
       el.list.addEventListener('click', async (e) => {
         const delBtn = e.target.closest('[data-remove]');
         const editBtn = e.target.closest('[data-edit]');
@@ -496,8 +616,11 @@
         }
       });
 
-      // Firebase подписка и первичный рендер
+      // Firebase подписка
       subscribe();
+
+      // Инициализация Drag&Drop
+      initDnD();
     });
   </script>
 </body>
