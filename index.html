@@ -57,6 +57,7 @@
       max-height: 60dvh;
       overflow: auto;
       box-shadow: var(--shadow);
+      z-index: 1000; /* Увеличиваем z-index для видимости над другими элементами */
       display: none;
     }
     .suggestions.open { display: block }
@@ -89,20 +90,22 @@
     .content { padding: 12px 14px 16px }
     .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 6px 0 }
     .actions { margin-top: auto; display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 12px 14px; border-top: 1px solid #1f2937; background: #0c111b; flex-wrap: wrap }
-    button, .btn, a.btn { /* Добавляем a.btn для унификации размера */
+    button, a.btn { /* Унифицируем стили для button и a.btn */
       appearance: none;
       border: 1px solid #2b3443;
       background: #111827;
       color: var(--text);
-      padding: 10px 14px; /* Единый размер для всех кнопок */
+      padding: 10px 14px; /* Единый размер */
       border-radius: 12px;
       cursor: pointer;
       font-weight: 600;
       box-shadow: var(--shadow);
       text-decoration: none; /* Убираем подчеркивание для ссылок */
       display: inline-block; /* Убеждаемся, что ссылка ведет себя как кнопка */
+      min-width: 80px; /* Минимальная ширина для единообразия */
+      text-align: center; /* Центрируем текст */
     }
-    button:hover, .btn:hover, a.btn:hover { background: #0f172a; border-color: #3b475a }
+    button:hover, a.btn:hover { background: #0f172a; border-color: #3b475a }
     .btn-ghost { background: transparent; border-color: #374151 }
     .btn-danger { border-color: #7f1d1d; background: #1f0f12 }
     .btn-danger:hover { background: #2b0f12; border-color: #991b1b }
@@ -155,7 +158,7 @@
       .modal-content p {
         font-size: 14px;
       }
-      .modal-actions button, .modal-actions .btn {
+      .modal-actions button, .modal-actions a.btn {
         padding: 8px 12px;
         font-size: 14px;
       }
