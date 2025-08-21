@@ -75,7 +75,7 @@
 
     .modal-content {
       background: var(--card);
-      padding: 10px 20px 20px; /* Уменьшен padding-top для прижатия текста */
+      padding: 10px 20px 20px;
       border-radius: var(--radius);
       border: 1px solid #1f2937;
       box-shadow: var(--shadow);
@@ -85,14 +85,46 @@
     }
 
     .modal-content p {
-      margin: 0 0 20px;
+      margin: 0 0 15px;
       color: var(--muted);
     }
 
-    .modal-actions {
+    .modal-actions, .edit-actions {
       display: flex;
       justify-content: center;
       gap: 10px;
+    }
+
+    .edit-modal-content {
+      background: var(--card);
+      padding: 20px;
+      border-radius: var(--radius);
+      border: 1px solid #1f2937;
+      box-shadow: var(--shadow);
+      width: 90%;
+      max-width: 500px;
+      text-align: center;
+    }
+
+    .edit-modal-content h3 {
+      margin: 0 0 15px;
+      color: var(--text);
+    }
+
+    .edit-modal-content input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border: 1px solid #1f2937;
+      border-radius: 8px;
+      background: var(--panel);
+      color: var(--text);
+      font-size: 14px;
+    }
+
+    .edit-modal-content input:focus {
+      border-color: var(--accent-2);
+      box-shadow: 0 0 0 2px rgba(147,197,253,.12);
     }
   </style>
 </head>
@@ -133,6 +165,18 @@
       <div class="modal-actions">
         <button class="btn btn-danger" id="confirm-delete">Да</button>
         <button class="btn btn-ghost" id="cancel-delete">Нет</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модальное окно для редактирования ссылки -->
+  <div id="edit-modal" class="modal" style="display: none;">
+    <div class="edit-modal-content">
+      <h3>Редактировать ссылку на трейлер</h3>
+      <input type="text" id="trailer-link-input" placeholder="Введите URL трейлера" />
+      <div class="edit-actions">
+        <button class="btn btn-danger" id="save-trailer">Сохранить</button>
+        <button class="btn btn-ghost" id="cancel-edit">Отмена</button>
       </div>
     </div>
   </div>
@@ -312,6 +356,7 @@
         const genres = (m.genres || []).slice(0,3).map(g=>`<span class="pill">${esc(g.name)}</span>`).join('');
         const rating = (m.vote_average && m.vote_count > 0) ? `⭐${Number(m.vote_average).toFixed(1)}` : '';
         const runtime = (m.runtime ? `${m.runtime} min` : (Array.isArray(m.episode_run_time) && m.episode_run_time[0]) ? `${m.episode_run_time[0]} min` : '');
+        const isAllowedDevice = getDeviceId() === ALLOWED_DEVICE_ID;
         return `<article class="card">
           <img class="poster" src="${esc(poster)}" alt="Poster for ${esc(title)}" loading="lazy" />
           <div class="content">
@@ -326,8 +371,9 @@
               <span class="pill">${esc(m.media_type.toUpperCase())}</span>
             </div>
             <div class="row" style="gap:8px">
-              <a class="btn" id="trailer-${esc(key)}" href="#" target="_blank" rel="noreferrer">Трейлер</a>
+              <a class="btn" id="trailer-${esc(key)}" href="${esc(m.customTrailerUrl || '#')}" target="_blank" rel="noreferrer">Трейлер</a>
               <button class="btn-ghost" data-remove="${esc(key)}" title="Удалить">Удалить</button>
+              ${isAllowedDevice ? '<button class="btn-ghost" data-edit="${esc(key)}" title="Редактировать трейлер">⚙️</button>' : ''}
             </div>
           </div>
         </article>`;
@@ -338,12 +384,11 @@
           btn.addEventListener('click', async (e) => {
             e.preventDefault();
             const m = state.items[key];
-            const title = m.title || m.name || '';
-            const trailerUrl = await searchYouTubeTrailer(title);
+            const trailerUrl = m.customTrailerUrl || await searchYouTubeTrailer(m.title || m.name || '');
             if (trailerUrl) {
               window.open(trailerUrl, '_blank');
             } else {
-              alert('Русскоязычный трейлер не найден.');
+              alert('Трейлер не найден.');
             }
           });
         }
@@ -364,6 +409,7 @@
       const m = await fetchDetails(type, id);
       if (m && !m.status_code) {
         m.media_type = type;
+        m.customTrailerUrl = await searchYouTubeTrailer(m.title || m.name || '') || bestTrailerUrl(m) || '';
         state.items[key] = m;
         state.order.unshift(key);
         save();
@@ -430,37 +476,64 @@
         });
 
         el.list.addEventListener('click', (e) => {
-          const btn = e.target.closest('[data-remove]');
-          if (!btn) return;
-          const key = btn.getAttribute('data-remove');
-          const m = state.items[key];
-          const title = m.title || m.name || 'Неизвестное произведение';
+          const deleteBtn = e.target.closest('[data-remove]');
+          if (deleteBtn) {
+            const key = deleteBtn.getAttribute('data-remove');
+            const m = state.items[key];
+            const title = m.title || m.name || 'Неизвестное произведение';
 
-          // Показываем модальное окно
-          const modal = document.getElementById('modal');
-          const modalTitle = document.getElementById('modal-title');
-          modalTitle.textContent = title;
-          modal.style.display = 'flex';
+            const modal = document.getElementById('modal');
+            const modalTitle = document.getElementById('modal-title');
+            modalTitle.textContent = title;
+            modal.style.display = 'flex';
 
-          // Обработчики для кнопок
-          document.getElementById('confirm-delete').onclick = () => {
-            delete state.items[key];
-            state.order = state.order.filter(x => x !== key);
-            save();
-            renderList();
-            modal.style.display = 'none'; // Закрываем модал после удаления
-          };
-
-          document.getElementById('cancel-delete').onclick = () => {
-            modal.style.display = 'none'; // Закрываем модал без удаления
-          };
-
-          // Закрытие модала при клике вне области
-          modal.onclick = (e) => {
-            if (e.target === modal) {
+            document.getElementById('confirm-delete').onclick = () => {
+              delete state.items[key];
+              state.order = state.order.filter(x => x !== key);
+              save();
+              renderList();
               modal.style.display = 'none';
-            }
-          };
+            };
+
+            document.getElementById('cancel-delete').onclick = () => {
+              modal.style.display = 'none';
+            };
+
+            modal.onclick = (e) => {
+              if (e.target === modal) {
+                modal.style.display = 'none';
+              }
+            };
+          }
+
+          const editBtn = e.target.closest('[data-edit]');
+          if (editBtn && isAllowedDevice) {
+            const key = editBtn.getAttribute('data-edit');
+            const m = state.items[key];
+            const currentTrailer = m.customTrailerUrl || '';
+
+            const editModal = document.getElementById('edit-modal');
+            const trailerInput = document.getElementById('trailer-link-input');
+            trailerInput.value = currentTrailer;
+            editModal.style.display = 'flex';
+
+            document.getElementById('save-trailer').onclick = () => {
+              m.customTrailerUrl = trailerInput.value.trim() || null;
+              save();
+              renderList();
+              editModal.style.display = 'none';
+            };
+
+            document.getElementById('cancel-edit').onclick = () => {
+              editModal.style.display = 'none';
+            };
+
+            editModal.onclick = (e) => {
+              if (e.target === editModal) {
+                editModal.style.display = 'none';
+              }
+            };
+          }
         });
 
         load();
