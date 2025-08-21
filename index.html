@@ -77,7 +77,25 @@
     .actions { margin-top: auto; display:flex; justify-content: space-between; align-items: center; gap: 8px; padding: 12px 14px; border-top:1px solid #1f2937; background: #0c111b; flex-wrap: wrap }
     button, .btn { appearance: none; border: 1px solid #2b3443; background: #111827; color: var(--text); padding: 10px 14px; border-radius: 12px; cursor: pointer; font-weight: 600; box-shadow: var(--shadow) }
     button:hover { background: #0f172a; border-color:#3b475a }
-    .btn-ghost { background: transparent; border-color: #374151 }
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid #374151;
+      display: inline-block; /* Ensures <a> behaves like <button> */
+      vertical-align: middle; /* Aligns text vertically */
+      text-align: center; /* Centers text */
+      line-height: normal; /* Prevents line-height differences */
+      padding: 10px 14px; /* Matches button, .btn */
+      border-radius: 12px; /* Matches button, .btn */
+      color: var(--text); /* Overrides default a color */
+      text-decoration: none; /* Removes underline from <a> */
+      font-weight: 600; /* Matches button, .btn */
+      box-sizing: border-box; /* Ensures padding doesn’t affect size */
+      min-width: 80px; /* Sets a minimum width to equalize size */
+    }
+    .btn-ghost:hover {
+      background: #0f172a;
+      border-color: #3b475a;
+    }
     .btn-danger { border-color: #7f1d1d; background: #1f0f12 }
     .btn-danger:hover { background: #2b0f12; border-color:#991b1b }
     footer { color: var(--muted); font-size: 12px; border-top: 1px solid #1f2937 }
