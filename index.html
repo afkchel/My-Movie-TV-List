@@ -253,6 +253,13 @@
         if (data) {
           state.items = data.items || {};
           state.order = data.order || [];
+          // Инициализация customTrailerUrl для существующих записей
+          Object.keys(state.items).forEach(key => {
+            if (!state.items[key].customTrailerUrl) {
+              const m = state.items[key];
+              state.items[key].customTrailerUrl = bestTrailerUrl(m) || '';
+            }
+          });
           renderList();
         }
       }, (error) => console.error('Ошибка загрузки:', error));
@@ -357,6 +364,7 @@
         const rating = (m.vote_average && m.vote_count > 0) ? `⭐${Number(m.vote_average).toFixed(1)}` : '';
         const runtime = (m.runtime ? `${m.runtime} min` : (Array.isArray(m.episode_run_time) && m.episode_run_time[0]) ? `${m.episode_run_time[0]} min` : '');
         const isAllowedDevice = getDeviceId() === ALLOWED_DEVICE_ID;
+        const trailerUrl = m.customTrailerUrl || '';
         return `<article class="card">
           <img class="poster" src="${esc(poster)}" alt="Poster for ${esc(title)}" loading="lazy" />
           <div class="content">
@@ -371,7 +379,7 @@
               <span class="pill">${esc(m.media_type.toUpperCase())}</span>
             </div>
             <div class="row" style="gap:8px">
-              <a class="btn" id="trailer-${esc(key)}" href="${esc(m.customTrailerUrl || '#')}" target="_blank" rel="noreferrer">Трейлер</a>
+              <a class="btn" id="trailer-${esc(key)}" href="${esc(trailerUrl || '#')}" target="_blank" rel="noreferrer">Трейлер</a>
               <button class="btn-ghost" data-remove="${esc(key)}" title="Удалить">Удалить</button>
               ${isAllowedDevice ? '<button class="btn-ghost" data-edit="${esc(key)}" title="Редактировать трейлер">⚙️</button>' : ''}
             </div>
@@ -510,6 +518,7 @@
           if (editBtn && isAllowedDevice) {
             const key = editBtn.getAttribute('data-edit');
             const m = state.items[key];
+            if (!m) return; // Защита от undefined
             const currentTrailer = m.customTrailerUrl || '';
 
             const editModal = document.getElementById('edit-modal');
