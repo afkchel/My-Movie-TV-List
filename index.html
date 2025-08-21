@@ -87,12 +87,27 @@
     .modal-content p {
       margin: 0 0 15px;
       color: var(--muted);
+      font-size: 16px;
     }
 
     .modal-actions, .edit-actions {
       display: flex;
       justify-content: center;
       gap: 10px;
+    }
+
+    @media (max-width: 640px) {
+      .modal-content {
+        max-width: 90%;
+        padding: 15px;
+      }
+      .modal-content p {
+        font-size: 14px;
+      }
+      .modal-actions button, .modal-actions .btn {
+        padding: 8px 12px;
+        font-size: 14px;
+      }
     }
 
     .edit-modal-content {
