@@ -8,7 +8,7 @@
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'><text y='1em' font-size='96'>🎬</text></svg>">
   <style>
     :root {
-      --bg: #0b0c0f;
+      --bg: #0b0c0f; /* deep blue-black */
       --panel: #12141a;
       --text: #e6e8f0;
       --muted: #9aa3b2;
@@ -26,22 +26,38 @@
       margin: 0;
       font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
       background: radial-gradient(1000px 600px at 10% -10%, rgba(147,197,253,.15), transparent), radial-gradient(800px 500px at 110% 10%, rgba(110,231,183,.12), transparent), var(--bg);
-      background-attachment: fixed;
+      background-attachment: fixed; /* Fixes the background in place */
       color: var(--text);
       display: grid;
       grid-template-rows: auto 1fr auto;
       min-height: 100dvh;
     }
-    header { background: color-mix(in lab, var(--bg) 70%, transparent); border-bottom: 1px solid #1f2937 }
+    header {
+      background: color-mix(in lab, var(--bg) 70%, transparent);
+      border-bottom: 1px solid #1f2937;
+    }
     .container { max-width: 980px; margin: 0 auto; padding: 16px }
     .title { display: flex; gap: 12px; align-items: center }
     .title h1 { margin: 0; font-weight: 800; letter-spacing: .2px; font-size: clamp(22px, 5vw, 30px) }
     .subtitle { margin: 6px 0 0; color: var(--muted); font-size: 14px }
     .searchbar { position: relative; margin-top: 14px }
-    .searchbar input[type="text"] { width: 100%; padding: 14px 48px 14px 16px; border-radius: 14px; background: var(--panel); color: var(--text); border: 1px solid #1f2937; outline: none; font-size: 16px; box-shadow: inset 0 1px 0 rgba(255,255,255,.02), var(--shadow) }
+    .searchbar input[type="text"] { width: 100%; padding: 14px 48px 14px 16px; border-radius: 14px; background: var(--panel); color: var(--text); border: 1px solid #1f2937; outline: none; font-size: 16px; box-shadow: inset 0 1px 0 rgba(255,255,255,.02), var(--shadow); }
     .searchbar input:focus { border-color: var(--accent-2); box-shadow: 0 0 0 4px rgba(147,197,253,.12), var(--shadow) }
     .searchbar .kbd { position:absolute; right:10px; top:50%; transform: translateY(-50%); font: 12px/1 monospace; color: var(--muted); opacity:.9 }
-    .suggestions { position: absolute; inset: auto 0 0 0; transform: translateY(100%); background: var(--panel); border: 1px solid #1f2937; border-radius: 12px; margin-top: 8px; max-height: 60dvh; overflow: auto; box-shadow: var(--shadow); display: none; z-index: 100 }
+    .suggestions {
+      position: absolute;
+      inset: auto 0 0 0;
+      transform: translateY(100%);
+      background: var(--panel);
+      border: 1px solid #1f2937;
+      border-radius: 12px;
+      margin-top: 8px;
+      max-height: 60dvh;
+      overflow: auto;
+      box-shadow: var(--shadow);
+      display: none;
+      z-index: 100; /* Ensures suggestions appear above other content */
+    }
     .suggestions.open { display: block }
     .suggestion { display: grid; grid-template-columns: 46px 1fr auto; gap: 12px; align-items: center; padding: 10px 12px; cursor: pointer }
     .suggestion:hover, .suggestion[aria-selected="true"] { background: #0b1220 }
@@ -52,16 +68,13 @@
     .list { display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px }
     @media (max-width: 900px) { .list { grid-template-columns: repeat(6, 1fr) } }
     @media (max-width: 640px) { .list { grid-template-columns: repeat(4, 1fr) } }
-
     .card {
-      grid-column: span 4;
-      background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0)) , var(--card);
-      border: 1px solid #1f2937; border-radius: var(--radius); overflow: hidden;
-      box-shadow: var(--shadow); display:flex; flex-direction: column;
+      grid-column: span 4; background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0)) , var(--card); border: 1px solid #1f2937; border-radius: var(--radius);
+      overflow: hidden; box-shadow: var(--shadow); display:flex; flex-direction: column;
       transition: transform .18s ease, box-shadow .18s ease;
       will-change: transform;
+      position: relative; /* для частиц */
     }
-    .sortable .card { cursor: grab }
     .card.wide { grid-column: span 6 }
     @media (max-width: 640px) { .card, .card.wide { grid-column: span 4 } }
     .poster { width: 100%; aspect-ratio: 3 / 4.2; object-fit: cover; background:#0b1220 }
@@ -71,10 +84,23 @@
     button, .btn { appearance: none; border: 1px solid #2b3443; background: #111827; color: var(--text); padding: 10px 14px; border-radius: 12px; cursor: pointer; font-weight: 600; box-shadow: var(--shadow) }
     button:hover { background: #0f172a; border-color:#3b475a }
     .btn-ghost {
-      background: transparent; border: 1px solid #374151; display: inline-flex; align-items:center; justify-content:center;
-      vertical-align: middle; text-align: center; line-height: 1.5; padding: 10px 14px; border-radius: 12px; color: var(--text);
-      text-decoration: none; font-weight: 600; box-sizing: border-box; min-width: 80px; font-size: 16px
+      background: transparent;
+      border: 1px solid #374151;
+      display: inline-block;
+      vertical-align: middle;
+      text-align: center;
+      line-height: 1.5;
+      padding: 10px 14px;
+      border-radius: 12px;
+      color: var(--text);
+      text-decoration: none;
+      font-weight: 600;
+      box-sizing: border-box;
+      min-width: 80px;
+      font-size: 16px;
     }
+    a.btn-ghost { font-family: Arial, sans-serif; }
+    button.btn-ghost { padding: 10px 14px; line-height: 1.5; }
     .btn-ghost:hover { background: #0f172a; border-color: #3b475a }
     .btn-danger { border-color: #7f1d1d; background: #1f0f12 }
     .btn-danger:hover { background: #2b0f12; border-color:#991b1b }
@@ -83,8 +109,16 @@
     a:hover { text-decoration: underline }
 
     /* Модалки */
-    .modal { position: fixed; inset:0; background: rgba(0, 0, 0, 0.5); display: none; justify-content: center; align-items: center; z-index: 100 }
-    .modal-content { background: var(--card); padding: 10px 20px 20px; border-radius: var(--radius); border: 1px solid #1f2937; box-shadow: var(--shadow); width: 90%; max-width: 400px; text-align: center }
+    .modal {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      display: none; justify-content: center; align-items: center;
+      z-index: 100;
+    }
+    .modal-content {
+      background: var(--card); padding: 10px 20px 20px; border-radius: var(--radius); border: 1px solid #1f2937; box-shadow: var(--shadow);
+      width: 90%; max-width: 400px; text-align: center;
+    }
     .modal-content p { margin: 0 0 15px; color: var(--muted); font-size: 16px }
     .modal-actions, .edit-actions { display: flex; justify-content: center; gap: 10px }
     @media (max-width: 640px) {
@@ -92,9 +126,14 @@
       .modal-content p { font-size: 14px }
       .modal-actions button, .modal-actions .btn { padding: 8px 12px; font-size: 14px }
     }
-    .edit-modal-content { background: var(--card); padding: 20px; border-radius: var(--radius); border: 1px solid #1f2937; box-shadow: var(--shadow); width: 90%; max-width: 500px; text-align: center }
+    .edit-modal-content {
+      background: var(--card); padding: 20px; border-radius: var(--radius); border: 1px solid #1f2937; box-shadow: var(--shadow);
+      width: 90%; max-width: 500px; text-align: center;
+    }
     .edit-modal-content h3 { margin: 0 0 15px; color: var(--text) }
-    .edit-modal-content input { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #1f2937; border-radius: 8px; background: var(--panel); color: var(--text); font-size: 14px }
+    .edit-modal-content input {
+      width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #1f2937; border-radius: 8px; background: var(--panel); color: var(--text); font-size: 14px;
+    }
     .edit-modal-content input:focus { border-color: var(--accent-2); box-shadow: 0 0 0 2px rgba(147,197,253,.12) }
 
     /* Лоадер */
@@ -103,9 +142,22 @@
     #list.loading { display: none }
     .loader-container { position: relative; min-height: 200px; width: 100% }
 
-    /* DnD визуальные состояния */
+    /* Drag & Drop */
     body.noselect { user-select: none }
     .card.dragging { opacity: .6; cursor: grabbing; box-shadow: 0 16px 40px rgba(0,0,0,.55) }
+
+    /* Частицы для «рассыпания» */
+    .shatter-container { position:absolute; inset:0; pointer-events:none; overflow:visible; }
+    .shatter-piece {
+      position:absolute; width:14px; height:14px; border-radius:3px;
+      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.0)), #1f2937;
+      box-shadow: 0 2px 10px rgba(0,0,0,.35);
+      will-change: transform, opacity;
+    }
+    .fade-out {
+      animation: fadeOut .2s ease forwards;
+    }
+    @keyframes fadeOut { to { opacity: 0; transform: scale(.95) } }
   </style>
 </head>
 <body>
@@ -118,7 +170,7 @@
           <p class="subtitle">Добро пожаловать на список не проходняков, составленный Леонидом</p>
         </div>
       </div>
-      <div class="searchbar" id="searchbar" role="combobox" aria-expanded="false" aria-owns="suggestion-list">
+      <div class="searchbar" role="combobox" aria-expanded="false" aria-owns="suggestion-list">
         <input id="search" type="text" placeholder="Search for a film or show…" autocomplete="off" aria-autocomplete="list" aria-controls="suggestion-list" />
         <span class="kbd">Enter ↵</span>
         <div id="suggestions" class="suggestions" role="listbox" aria-label="Search suggestions"></div>
@@ -141,8 +193,8 @@
     </div>
   </footer>
 
-  <!-- Подтверждение удаления -->
-  <div id="modal" class="modal">
+  <!-- Модальное окно для подтверждения удаления -->
+  <div id="modal" class="modal" style="display: none;">
     <div class="modal-content">
       <p>Вы уверены, что хотите удалить <strong id="modal-title"></strong>?</p>
       <div class="modal-actions">
@@ -152,8 +204,8 @@
     </div>
   </div>
 
-  <!-- Редактирование трейлера -->
-  <div id="edit-modal" class="modal">
+  <!-- Модальное окно для редактирования ссылки -->
+  <div id="edit-modal" class="modal" style="display: none;">
     <div class="edit-modal-content">
       <h3>Редактировать ссылку на трейлер</h3>
       <input type="text" id="trailer-link-input" placeholder="Введите URL трейлера" />
@@ -165,11 +217,10 @@
   </div>
 
   <script type="module">
-    'use strict'
     // ======= CONFIG =======
-    const TMDB_API_KEY = "166bdfecdc09d46826d8662b9627ad27";
-    const TMDB_IMG_BASE = "https://image.tmdb.org/t/p/";
-    const LANGUAGE = "ru";
+    const TMDB_API_KEY = "166bdfecdc09d46826d8662b9627ad27"; // TMDb API Key
+    const TMDB_IMG_BASE = "https://image.tmdb.org/t/p/"; // TMDb image base URL
+    const LANGUAGE = "ru"; // Russian language for TMDb
     const YOUTUBE_API_KEY = "AIzaSyCUHWrkVFi1UO1y8NKSkWtrT_W1aZpdBDM";
     const SEARCH_DELAY_MS = 350;
     const ALLOWED_DEVICE_ID = "30a62442-ecd5-4abf-9b51-22b34ae85d2e|Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36";
@@ -187,91 +238,125 @@
       appId: "1:470112487115:web:a0dba8f948514eaf3e3d4e",
       measurementId: "G-JLCYQH6XEE"
     };
-
     const app = initializeApp(firebaseConfig);
     const database = getDatabase(app);
 
     // ======= STATE =======
     const state = {
-      items: /** @type {Record<string, any>} */ ({}),
+      items: /** @type {Record<string, any>} */ ({}), // key `${type}_${id}` -> details
       order: /** @type {string[]} */ ([]),
       selectedIndex: -1,
       suggestions: [],
     };
 
-    // ======= DOM =======
-    const $ = (sel, ctx=document) => ctx.querySelector(sel);
-    const $$ = (sel, ctx=document) => [...ctx.querySelectorAll(sel)];
-    const esc = (s="") => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
-    const debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t=setTimeout(() => fn(...a), ms); }; };
-
+    // ======= ELEMENTS =======
     const el = {
-      searchbar: $('#searchbar'),
-      search: $('#search'),
-      suggestions: $('#suggestions'),
-      list: $('#list'),
-      loader: $('#loader'),
-      modal: $('#modal'),
-      modalTitle: $('#modal-title'),
-      confirmDelete: $('#confirm-delete'),
-      cancelDelete: $('#cancel-delete'),
-      editModal: $('#edit-modal'),
-      trailerInput: $('#trailer-link-input'),
-      saveTrailer: $('#save-trailer'),
-      cancelEdit: $('#cancel-edit'),
+      search: document.getElementById('search'),
+      suggestions: document.getElementById('suggestions'),
+      list: document.getElementById('list'),
+      loader: document.getElementById('loader'),
+      searchbar: document.querySelector('.searchbar'),
+      modal: document.getElementById('modal'),
+      modalTitle: document.getElementById('modal-title'),
+      confirmDelete: document.getElementById('confirm-delete'),
+      cancelDelete: document.getElementById('cancel-delete'),
+      editModal: document.getElementById('edit-modal'),
+      trailerInput: document.getElementById('trailer-link-input'),
+      saveTrailer: document.getElementById('save-trailer'),
+      cancelEdit: document.getElementById('cancel-edit'),
     };
 
-    // ======= DEVICE CHECK =======
+    // ======= UTIL =======
+    const debounce = (fn, ms) => { let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); } };
+    const esc = (s) => String(s || "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
+    const byId = (id) => document.getElementById(id);
+
+    // Device ID
     function getDeviceId() {
       let deviceId = localStorage.getItem('deviceId');
       if (!deviceId) {
-        deviceId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
-          const r = Math.random()*16|0, v = c==='x'? r : (r&0x3|0x8); return v.toString(16);
+        deviceId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+          const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+          return v.toString(16);
         });
         localStorage.setItem('deviceId', deviceId);
       }
       return deviceId + '|' + navigator.userAgent;
     }
-    const allowedDevice = getDeviceId() === ALLOWED_DEVICE_ID;
 
-    // Make list visibly sortable for allowed device
-    if (allowedDevice) el.list.classList.add('sortable');
+    // Firebase save/load
+    function save() {
+      set(ref(database, 'tmdbList'), { items: state.items, order: state.order })
+        .catch((error) => console.error('Ошибка сохранения:', error));
+    }
 
-    // ======= API HELPERS =======
+    function load() {
+      return new Promise((resolve) => {
+        onValue(ref(database, 'tmdbList'), (snapshot) => {
+          const data = snapshot.val();
+          if (data) {
+            state.items = data.items || {};
+            state.order = data.order || [];
+            // ensure customTrailerUrl exists
+            Object.keys(state.items).forEach(key => {
+              if (!state.items[key].customTrailerUrl) {
+                const m = state.items[key];
+                state.items[key].customTrailerUrl = bestTrailerUrl(m) || '';
+              }
+            });
+          }
+          resolve();
+        }, (error) => {
+          console.error('Ошибка загрузки:', error);
+          resolve();
+        });
+      });
+    }
+
+    // TMDb helpers
     function apiUrl(path, params = {}) {
       const base = new URL('https://api.themoviedb.org/3' + path);
       const sp = new URLSearchParams({ api_key: TMDB_API_KEY, language: LANGUAGE, ...params });
       base.search = sp.toString();
       return base.toString();
     }
-    const imgUrl = (path, size='w500') => path ? `${TMDB_IMG_BASE}${size}${path}` : '';
-
-    // ======= YOUTUBE =======
-    async function searchYouTubeTrailer(title) {
-      const q = `${encodeURIComponent(title)} трейлер русский`;
-      const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${q}&key=${YOUTUBE_API_KEY}&regionCode=RU&maxResults=1&type=video`;
-      try {
-        const res = await fetch(url);
-        const data = await res.json();
-        if (data?.items?.length) return `https://www.youtube.com/watch?v=${data.items[0].id.videoId}`;
-      } catch (e) {
-        console.warn('YouTube API error:', e);
-      }
-      return null;
+    function imgUrl(path, size = 'w500') {
+      if (!path) return '';
+      return `${TMDB_IMG_BASE}${size}${path}`;
     }
 
-    // ======= TMDB =======
+    // YouTube
+    async function searchYouTubeTrailer(title) {
+      const query = `${encodeURIComponent(title)} трейлер русский`;
+      const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${query}&key=${YOUTUBE_API_KEY}&regionCode=RU&maxResults=1&type=video`;
+      try {
+        const response = await fetch(url);
+        const data = await response.json();
+        if (data.items && data.items.length > 0) {
+          return `https://www.youtube.com/watch?v=${data.items[0].id.videoId}`;
+        }
+        return null;
+      } catch (error) {
+        console.warn('YouTube API error:', error);
+        return null;
+      }
+    }
+
+    // TMDb
     async function searchMulti(q) {
-      if (!TMDB_API_KEY) return { results: [] };
+      if (!TMDB_API_KEY || TMDB_API_KEY.includes('PASTE')) {
+        console.error('TMDb API key missing or invalid');
+        return { Error: 'Missing TMDb API key.' };
+      }
       const url = apiUrl('/search/multi', { query: q, include_adult: 'false' });
       try {
         const res = await fetch(url);
         if (!res.ok) return { results: [] };
         const data = await res.json();
-        const items = (data?.results||[]).filter(r=>r.media_type==='movie'||r.media_type==='tv').slice(0,12);
+        const items = (data.results || []).filter(r => r.media_type === 'movie' || r.media_type === 'tv').slice(0, 12);
         return { results: items };
-      } catch (e) {
-        console.warn('TMDb search error:', e);
+      } catch (error) {
+        console.error('TMDb API error:', error);
         return { results: [] };
       }
     }
@@ -284,34 +369,13 @@
 
     function bestTrailerUrl(details) {
       const vids = details?.videos?.results || [];
-      const pick = vids.find(v => v.site==='YouTube' && v.type==='Trailer' && v.official && v.iso_639_1==='ru')
-        || vids.find(v => v.site==='YouTube' && v.type==='Trailer' && v.iso_639_1==='ru')
-        || vids.find(v => v.site==='YouTube' && v.type==='Teaser' && v.iso_639_1==='ru');
+      const pick = vids.find(v => v.site === 'YouTube' && v.type === 'Trailer' && v.official && v.iso_639_1 === 'ru')
+        || vids.find(v => v.site === 'YouTube' && v.type === 'Trailer' && v.iso_639_1 === 'ru')
+        || vids.find(v => v.site === 'YouTube' && v.type === 'Teaser' && v.iso_639_1 === 'ru');
       return pick ? `https://www.youtube.com/watch?v=${pick.key}` : '';
     }
 
-    // ======= SAVE / LOAD (Firebase) =======
-    function save() {
-      set(ref(database, 'tmdbList'), { items: state.items, order: state.order })
-        .catch(err => console.error('Ошибка сохранения:', err));
-    }
-
-    function subscribe() {
-      onValue(ref(database, 'tmdbList'), (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-          state.items = data.items || {};
-          state.order = data.order || [];
-          for (const k of Object.keys(state.items)) {
-            const m = state.items[k];
-            if (!m.customTrailerUrl) m.customTrailerUrl = bestTrailerUrl(m) || '';
-          }
-        }
-        renderList();
-      }, (error) => console.error('Ошибка загрузки:', error));
-    }
-
-    // ======= SUGGESTIONS UI =======
+    // Suggestions UI
     function openSuggestions(items) {
       state.suggestions = items;
       el.suggestions.innerHTML = items.map((it, idx) => {
@@ -322,7 +386,7 @@
           <img src="${esc(poster)}" alt="" loading="lazy" />
           <div class="meta">
             <div style="font-weight:700">${esc(title)}</div>
-            <div class="pill">${esc(year||'')}</div>
+            <div class="pill">${esc(year || '')}</div>
           </div>
           <div class="pill">${esc(it.media_type)}</div>
         </div>`;
@@ -336,36 +400,7 @@
       state.selectedIndex = -1; state.suggestions = [];
     }
 
-    // ======= RENDER LIST =======
-    function cardTemplate(m, key) {
-      const poster = m.poster_path ? imgUrl(m.poster_path, 'w500') : '';
-      const title = m.title || m.name || '';
-      const year = (m.release_date || m.first_air_date || '').slice(0,4) || '';
-      const genres = (m.genres||[]).slice(0,3).map(g=>`<span class="pill">${esc(g.name)}</span>`).join('');
-      const rating = (m.vote_average && m.vote_count>0) ? `⭐${Number(m.vote_average).toFixed(1)}` : '';
-      const runtime = (m.runtime ? `${m.runtime} min` : (Array.isArray(m.episode_run_time) && m.episode_run_time[0]) ? `${m.episode_run_time[0]} min` : '');
-      return `<article class="card" draggable="${allowedDevice}" data-key="${esc(key)}" aria-grabbed="false">
-        <img class="poster" src="${esc(poster)}" alt="Poster for ${esc(title)}" loading="lazy" />
-        <div class="content">
-          <h3 style="margin:0 0 6px">${esc(title)} ${year ? `<span class=\"pill\" style=\"margin-left:6px\">${esc(year)}</span>`:''}</h3>
-          <div class="row">${genres}</div>
-          <p style="color:var(--muted); line-height:1.5; margin: 8px 0 0">${esc(m.overview || 'No description.')}</p>
-        </div>
-        <div class="actions">
-          <div class="row" style="gap:8px">
-            ${rating ? `<span class="pill">${esc(rating)}</span>` : ''}
-            ${runtime ? `<span class="pill">${esc(runtime)}</span>` : ''}
-            <span class="pill">${esc(m.media_type.toUpperCase())}</span>
-          </div>
-          <div class="row" style="gap:8px">
-            <a class="btn-ghost" href="#" data-trailer="${esc(key)}" rel="noreferrer">Трейлер</a>
-            <button class="btn-ghost" data-remove="${esc(key)}" title="Удалить">Удалить</button>
-            ${allowedDevice ? `<button class="btn-ghost" data-edit="${esc(key)}" title="Редактировать трейлер">⚙️</button>` : ''}
-          </div>
-        </div>
-      </article>`;
-    }
-
+    // Render
     function renderList() {
       el.list.classList.remove('loading');
       el.loader.style.display = 'none';
@@ -373,10 +408,57 @@
         el.list.innerHTML = `<div class="card wide"><div class="content"><h3 style="margin:6px 0 6px">Your list is empty</h3><p class="subtitle">Search above and click a result to add a movie or TV show.</p></div></div>`;
         return;
       }
-      el.list.innerHTML = state.order.map(key => cardTemplate(state.items[key], key)).join('');
+      el.list.innerHTML = state.order.map(key => {
+        const m = state.items[key];
+        const poster = m.poster_path ? imgUrl(m.poster_path, 'w500') : '';
+        const title = m.title || m.name || '';
+        const year = (m.release_date || m.first_air_date || '').slice(0,4) || '';
+        const genres = (m.genres || []).slice(0,3).map(g=>`<span class="pill">${esc(g.name)}</span>`).join('');
+        const rating = (m.vote_average && m.vote_count > 0) ? `⭐${Number(m.vote_average).toFixed(1)}` : '';
+        const runtime = (m.runtime ? `${m.runtime} min` : (Array.isArray(m.episode_run_time) && m.episode_run_time[0]) ? `${m.episode_run_time[0]} min` : '');
+        const isAllowedDevice = getDeviceId() === ALLOWED_DEVICE_ID;
+        const trailerUrl = m.customTrailerUrl || '';
+        return `<article class="card" data-key="${esc(key)}" draggable="${isAllowedDevice}">
+          <img class="poster" src="${esc(poster)}" alt="Poster for ${esc(title)}" loading="lazy" />
+          <div class="content">
+            <h3 style="margin:0 0 6px">${esc(title)} ${year ? `<span class=\"pill\" style=\"margin-left:6px\">${esc(year)}</span>`:''}</h3>
+            <div class="row">${genres}</div>
+            <p style="color:var(--muted); line-height:1.5; margin: 8px 0 0">${esc(m.overview || 'No description.')}</p>
+          </div>
+          <div class="actions">
+            <div class="row" style="gap:8px">
+              ${rating ? `<span class="pill">${esc(rating)}</span>` : ''}
+              ${runtime ? `<span class="pill">${esc(runtime)}</span>` : ''}
+              <span class="pill">${esc(m.media_type.toUpperCase())}</span>
+            </div>
+            <div class="row" style="gap:8px">
+              <a class="btn-ghost" id="trailer-${esc(key)}" href="${esc(trailerUrl || '#')}" target="_blank" rel="noreferrer">Трейлер</a>
+              <button class="btn-ghost" data-remove="${esc(key)}" title="Удалить">Удалить</button>
+              ${isAllowedDevice ? `<button class="btn-ghost" data-edit="${esc(key)}" title="Редактировать трейлер">⚙️</button>` : ''}
+            </div>
+          </div>
+        </article>`;
+      }).join('');
+
+      // Поведение кнопок «Трейлер» — с YouTube fallback
+      state.order.forEach(key => {
+        const btn = document.getElementById(`trailer-${key}`);
+        if (btn) {
+          btn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            const m = state.items[key];
+            const trailerUrl = m.customTrailerUrl || await searchYouTubeTrailer(m.title || m.name || '');
+            if (trailerUrl) {
+              window.open(trailerUrl, '_blank');
+            } else {
+              alert('Трейлер не найден.');
+            }
+          });
+        }
+      });
     }
 
-    // ======= ADD =======
+    // Add item
     async function addItem(type, id) {
       const key = `${type}_${id}`;
       if (state.items[key]) return;
@@ -391,93 +473,17 @@
       }
     }
 
-    // ======= MODALS HELPERS =======
-    function openConfirmModal(title, onConfirm) {
-      el.modalTitle.textContent = title;
-      el.modal.style.display = 'flex';
-      const close = () => { el.modal.style.display = 'none'; cleanup(); };
-      const cleanup = () => {
-        el.confirmDelete.removeEventListener('click', confirmHandler);
-        el.cancelDelete.removeEventListener('click', close);
-        el.modal.removeEventListener('click', backdrop);
-      };
-      const confirmHandler = () => { onConfirm(); close(); };
-      const backdrop = (e) => { if (e.target === el.modal) close(); };
-      el.confirmDelete.addEventListener('click', confirmHandler, { once: true });
-      el.cancelDelete.addEventListener('click', close);
-      el.modal.addEventListener('click', backdrop);
-    }
-
-    function openEditModal(currentUrl, onSave) {
-      el.trailerInput.value = currentUrl || '';
-      el.editModal.style.display = 'flex';
-      const close = () => { el.editModal.style.display = 'none'; cleanup(); };
-      const cleanup = () => {
-        el.saveTrailer.removeEventListener('click', saveHandler);
-        el.cancelEdit.removeEventListener('click', close);
-        el.editModal.removeEventListener('click', backdrop);
-      };
-      const saveHandler = () => { onSave(el.trailerInput.value.trim()); close(); };
-      const backdrop = (e) => { if (e.target === el.editModal) close(); };
-      el.saveTrailer.addEventListener('click', saveHandler, { once: true });
-      el.cancelEdit.addEventListener('click', close);
-      el.editModal.addEventListener('click', backdrop);
-    }
-
-    // ======= SEARCH EVENTS =======
-    const doSearch = debounce(async () => {
-      const q = el.search.value.trim();
-      if (!q) { closeSuggestions(); return; }
-      const data = await searchMulti(q);
-      if (!data || data.Error) {
-        el.suggestions.innerHTML = `<div class="suggestion" aria-disabled="true">${esc(data?.Error || 'No results')}</div>`;
-        el.suggestions.classList.add('open');
-        return;
-      }
-      openSuggestions(data.results);
-    }, SEARCH_DELAY_MS);
-
-    function highlight() {
-      $$('.suggestion', el.suggestions).forEach((n, i) => n.setAttribute('aria-selected', String(i===state.selectedIndex)));
-    }
-
     // ======= DRAG & DROP (только разрешённое устройство) =======
     let dragEl = null;
-
-    function setDragImage(e) {
-      // Прозрачный drag-image, чтобы не мешал
-      const img = new Image();
-      img.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"></svg>';
-      e.dataTransfer?.setDragImage(img, 0, 0);
-    }
-
-    function getNearestCard(container, x, y) {
-      const cards = [...container.querySelectorAll('.card:not(.dragging)')];
-      if (!cards.length) return null;
-      let nearest = null;
-      let minDist = Infinity;
-      for (const c of cards) {
-        const r = c.getBoundingClientRect();
-        const cx = r.left + r.width/2;
-        const cy = r.top + r.height/2;
-        const dx = cx - x;
-        const dy = cy - y;
-        const dist = dx*dx + dy*dy;
-        if (dist < minDist) { minDist = dist; nearest = c; }
-      }
-      return nearest;
-    }
 
     function captureRects(container) {
       const map = new Map();
       container.querySelectorAll('.card').forEach(el => map.set(el, el.getBoundingClientRect()));
       return map;
     }
-
     function animateFlip(container, beforeMap) {
       const afterMap = new Map();
       container.querySelectorAll('.card').forEach(el => afterMap.set(el, el.getBoundingClientRect()));
-      // Применяем FLIP
       beforeMap.forEach((before, el) => {
         const after = afterMap.get(el);
         if (!after) return;
@@ -486,15 +492,30 @@
         if (dx || dy) {
           el.style.transform = `translate(${dx}px, ${dy}px)`;
           el.getBoundingClientRect(); // force reflow
-          requestAnimationFrame(() => {
-            el.style.transform = '';
-          });
+          requestAnimationFrame(() => { el.style.transform = ''; });
         }
       });
     }
+    function getNearestCard(container, x, y) {
+      const cards = [...container.querySelectorAll('.card:not(.dragging)')];
+      let nearest = null, minDist = Infinity;
+      for (const c of cards) {
+        const r = c.getBoundingClientRect();
+        const cx = r.left + r.width/2, cy = r.top + r.height/2;
+        const dx = cx - x, dy = cy - y;
+        const dist = dx*dx + dy*dy;
+        if (dist < minDist) { minDist = dist; nearest = c; }
+      }
+      return nearest;
+    }
+    function setInvisibleDragImage(e) {
+      const img = new Image();
+      img.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"></svg>';
+      e.dataTransfer?.setDragImage(img, 0, 0);
+    }
 
-    function initDnD() {
-      if (!allowedDevice) return;
+    function initDnD(isAllowed) {
+      if (!isAllowed) return;
       const container = el.list;
 
       container.addEventListener('dragstart', (e) => {
@@ -504,7 +525,7 @@
         dragEl.classList.add('dragging');
         dragEl.setAttribute('aria-grabbed', 'true');
         document.body.classList.add('noselect');
-        setDragImage(e);
+        setInvisibleDragImage(e);
       });
 
       container.addEventListener('dragend', () => {
@@ -513,8 +534,8 @@
         dragEl.setAttribute('aria-grabbed', 'false');
         dragEl = null;
         document.body.classList.remove('noselect');
-        // Сохраняем новый порядок
-        state.order = [...container.querySelectorAll('.card')].map(el => el.getAttribute('data-key'));
+        // фиксируем порядок
+        state.order = [...container.querySelectorAll('.card')].map(n => n.getAttribute('data-key'));
         save();
       });
 
@@ -523,25 +544,137 @@
         e.preventDefault();
         const before = captureRects(container);
         const nearest = getNearestCard(container, e.clientX, e.clientY);
-        if (nearest) {
-          // Вставляем перед ближайшей карточкой
-          if (nearest !== dragEl) {
-            container.insertBefore(dragEl, nearest);
-            animateFlip(container, before);
-          }
-        } else {
-          // Если карточек нет или не нашли — кидаем в конец
+        if (nearest && nearest !== dragEl) {
+          container.insertBefore(dragEl, nearest);
+          animateFlip(container, before);
+        } else if (!nearest) {
           container.appendChild(dragEl);
           animateFlip(container, before);
         }
       });
     }
 
+    // ======= «Рассыпание» + ЗВУК =======
+    function playCrashSound() {
+      // Простая синтезированная «стеклянная» трещина: шум + краткий тон
+      const ctx = playCrashSound.ctx || (playCrashSound.ctx = new (window.AudioContext || window.webkitAudioContext)());
+      const now = ctx.currentTime;
+      // Белый шум
+      const bufferSize = ctx.sampleRate * 0.35;
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        // экспоненциальное затухание
+        const t = i / bufferSize;
+        data[i] = (Math.random() * 2 - 1) * (1 - t) * (1 - t);
+      }
+      const noise = ctx.createBufferSource();
+      noise.buffer = buffer;
+
+      // Фильтр ВЧ
+      const highpass = ctx.createBiquadFilter();
+      highpass.type = 'highpass';
+      highpass.frequency.setValueAtTime(1200, now);
+
+      // Небольшой «дзынь» — синус
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(1200, now);
+      osc.frequency.exponentialRampToValueAtTime(450, now + 0.25);
+      gain.gain.setValueAtTime(0.2, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+
+      const master = ctx.createGain();
+      master.gain.value = 0.9;
+
+      noise.connect(highpass).connect(master);
+      osc.connect(gain).connect(master);
+      master.connect(ctx.destination);
+
+      noise.start(now);
+      noise.stop(now + 0.35);
+      osc.start(now);
+      osc.stop(now + 0.32);
+    }
+
+    function shatterCard(card, duration = 700, pieces = 28) {
+      return new Promise((resolve) => {
+        if (!card) return resolve();
+        // 1) Глушим клики и скрываем содержимое
+        [...card.children].forEach(ch => ch.classList.add('fade-out'));
+
+        // 2) Контейнер частиц
+        const cont = document.createElement('div');
+        cont.className = 'shatter-container';
+        card.appendChild(cont);
+
+        // Цвет подложки как у карточки
+        const bg = getComputedStyle(card).backgroundColor;
+
+        const rect = card.getBoundingClientRect();
+        const w = rect.width, h = rect.height;
+
+        // 3) Создаём частицы
+        for (let i = 0; i < pieces; i++) {
+          const p = document.createElement('div');
+          p.className = 'shatter-piece';
+          p.style.background = `linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,0)), ${bg}`;
+          // стартовая позиция — вокруг центра
+          const sx = w/2 + (Math.random() * 40 - 20);
+          const sy = h/2 + (Math.random() * 40 - 20);
+          p.style.left = sx + 'px';
+          p.style.top = sy + 'px';
+
+          cont.appendChild(p);
+
+          // Случайные направления/скорости
+          const angle = Math.random() * Math.PI * 2;
+          const radius = 40 + Math.random() * 110;
+          const tx = sx + Math.cos(angle) * radius;
+          const ty = sy + Math.sin(angle) * (radius * (0.6 + Math.random()*0.8));
+          const rot = (Math.random() * 2 - 1) * 720;
+
+          // Анимация через WAAPI
+          p.animate([
+            { transform: 'translate(0,0) rotate(0deg)', opacity: 1 },
+            { transform: `translate(${tx - sx}px, ${ty - sy}px) rotate(${rot}deg)`, opacity: 0 }
+          ], {
+            duration,
+            easing: 'cubic-bezier(.2,.6,.2,1)',
+            fill: 'forwards'
+          });
+        }
+
+        // 4) Играем звук
+        playCrashSound();
+
+        // 5) Убираем карточку после анимации
+        setTimeout(resolve, duration + 30);
+      });
+    }
+
     // ======= BOOT =======
     document.addEventListener('DOMContentLoaded', () => {
-      if (!allowedDevice) {
-        el.searchbar.style.display = 'none';
+      const currentDeviceId = getDeviceId();
+      const isAllowedDevice = currentDeviceId === ALLOWED_DEVICE_ID;
+
+      if (!isAllowedDevice) {
+        document.querySelector('.searchbar').style.display = 'none';
       } else {
+        // Поиск
+        const doSearch = debounce(async () => {
+          const q = el.search.value.trim();
+          if (!q) { closeSuggestions(); return; }
+          const data = await searchMulti(q);
+          if (!data || data.Error) {
+            el.suggestions.innerHTML = `<div class="suggestion" aria-disabled="true">${esc(data?.Error || 'No results')}</div>`;
+            el.suggestions.classList.add('open');
+            return;
+          }
+          openSuggestions(data.results);
+        }, SEARCH_DELAY_MS);
+
         el.search.addEventListener('input', doSearch);
         el.search.addEventListener('keydown', (e) => {
           if (!el.suggestions.classList.contains('open')) return;
@@ -559,6 +692,10 @@
           } else if (e.key === 'Escape') { closeSuggestions(); }
         });
 
+        function highlight() {
+          [...el.suggestions.querySelectorAll('.suggestion')].forEach((n, i) => n.setAttribute('aria-selected', String(i === state.selectedIndex)));
+        }
+
         el.suggestions.addEventListener('click', (e) => {
           const item = e.target.closest('.suggestion');
           if (!item) return;
@@ -568,59 +705,68 @@
         });
 
         document.addEventListener('click', (e) => {
-          if (!el.searchbar.contains(e.target)) closeSuggestions();
+          if (!document.querySelector('.searchbar').contains(e.target)) closeSuggestions();
         });
       }
 
-      // Делегирование кликов по карточкам
-      el.list.addEventListener('click', async (e) => {
-        const delBtn = e.target.closest('[data-remove]');
-        const editBtn = e.target.closest('[data-edit]');
-        const trailerLink = e.target.closest('[data-trailer]');
-
-        if (delBtn) {
-          const key = delBtn.getAttribute('data-remove');
+      // Делегирование по списку (удаление/редактирование)
+      el.list.addEventListener('click', (e) => {
+        const deleteBtn = e.target.closest('[data-remove]');
+        if (deleteBtn) {
+          const key = deleteBtn.getAttribute('data-remove');
           const m = state.items[key];
           const title = m?.title || m?.name || 'Неизвестное произведение';
-          openConfirmModal(title, () => {
+          const modal = el.modal;
+          el.modalTitle.textContent = title;
+          modal.style.display = 'flex';
+
+          // подтверждение
+          el.confirmDelete.onclick = async () => {
+            modal.style.display = 'none';
+            // анимация расссыпания
+            const card = el.list.querySelector(`.card[data-key="${CSS.escape(key)}"]`);
+            await shatterCard(card);
+            // реально удаляем
             delete state.items[key];
             state.order = state.order.filter(x => x !== key);
             save();
             renderList();
-          });
+          };
+          el.cancelDelete.onclick = () => { modal.style.display = 'none'; };
+          modal.onclick = (evt) => { if (evt.target === modal) modal.style.display = 'none'; };
+
           return;
         }
 
-        if (editBtn && allowedDevice) {
+        const editBtn = e.target.closest('[data-edit]');
+        if (editBtn) {
           const key = editBtn.getAttribute('data-edit');
           const m = state.items[key];
           if (!m) return;
-          openEditModal(m.customTrailerUrl || '', (val) => {
-            m.customTrailerUrl = val || '';
+          const currentTrailer = m.customTrailerUrl || '';
+          const editModal = el.editModal;
+          el.trailerInput.value = currentTrailer;
+          editModal.style.display = 'flex';
+
+          el.saveTrailer.onclick = () => {
+            m.customTrailerUrl = el.trailerInput.value.trim() || '';
             save();
             renderList();
-          });
-          return;
-        }
+            editModal.style.display = 'none';
+          };
 
-        if (trailerLink) {
-          e.preventDefault();
-          const key = trailerLink.getAttribute('data-trailer');
-          const m = state.items[key];
-          if (!m) return;
-          const title = m.title || m.name || '';
-          let url = m.customTrailerUrl || bestTrailerUrl(m);
-          if (!url) url = await searchYouTubeTrailer(title);
-          if (url) window.open(url, '_blank');
-          else alert('Трейлер не найден.');
+          el.cancelEdit.onclick = () => { editModal.style.display = 'none'; };
+          editModal.onclick = (evt) => { if (evt.target === editModal) editModal.style.display = 'none'; };
         }
       });
 
-      // Firebase подписка
-      subscribe();
-
-      // Инициализация Drag&Drop
-      initDnD();
+      // Подписка на Firebase и первичный рендер
+      load().then(() => {
+        renderList();
+        // Инициализируем DnD
+        const allowed = getDeviceId() === ALLOWED_DEVICE_ID;
+        initDnD(allowed);
+      });
     });
   </script>
 </body>
