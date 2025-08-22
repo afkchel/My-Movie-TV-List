@@ -111,19 +111,33 @@
     /* Particle Effect */
     .particle {
       position: absolute;
-      width: 8px;
-      height: 8px;
-      background: var(--card);
+      width: 10px;
+      height: 10px;
+      background: var(--accent);
       border-radius: 50%;
       pointer-events: none;
-      z-index: 10;
+      z-index: 1000;
+      transition: transform 1s ease-out, opacity 1s ease-out;
     }
     .particle-text {
       position: absolute;
       font-size: 14px;
-      color: var(--text);
+      color: var(--accent-2);
       pointer-events: none;
-      z-index: 10;
+      z-index: 1000;
+      transition: transform 0.8s ease-out, opacity 0.8s ease-out;
+    }
+    .particle-image {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      background-size: cover;
+      pointer-events: none;
+      z-index: 1000;
+      transition: transform 1s ease-out, opacity 1s ease-out;
+    }
+    .particle.move {
+      opacity: 0;
     }
     .card.deleting {
       opacity: 0;
@@ -361,11 +375,14 @@
 
     // ======= PARTICLE EFFECT =======
     function createParticleEffect(card) {
+      console.log('Starting particle animation for card deletion');
       const rect = card.getBoundingClientRect();
       const particles = [];
-      const particleCount = 50;
+      const particleCount = 100; // Increased for denser effect
       const textElements = card.querySelectorAll('.content h3, .content p, .pill, .actions a, .actions button');
+      const poster = card.querySelector('.poster');
       const textNodes = [];
+      const imageParticles = [];
 
       // Create particles for the card background
       for (let i = 0; i < particleCount; i++) {
@@ -377,20 +394,25 @@
         particles.push(particle);
 
         const angle = Math.random() * Math.PI * 2;
-        const velocity = 2 + Math.random() * 3;
+        const velocity = 2 + Math.random() * 4;
         const vx = Math.cos(angle) * velocity;
         const vy = Math.sin(angle) * velocity;
 
-        particle.animate([
-          { transform: 'translate(0, 0)', opacity: 1 },
-          { transform: `translate(${vx * 100}px, ${vy * 100}px)`, opacity: 0 }
-        ], {
-          duration: 1000,
-          easing: 'ease-out',
-          fill: 'forwards'
-        });
-
-        setTimeout(() => particle.remove(), 1000);
+        // Use Web Animations API if supported, else fallback to CSS
+        if (particle.animate) {
+          particle.animate([
+            { transform: 'translate(0, 0)', opacity: 1 },
+            { transform: `translate(${vx * 150}px, ${vy * 150}px)`, opacity: 0 }
+          ], {
+            duration: 1200,
+            easing: 'ease-out',
+            fill: 'forwards'
+          });
+        } else {
+          particle.style.transform = `translate(${vx * 150}px, ${vy * 150}px)`;
+          particle.classList.add('move');
+        }
+        setTimeout(() => particle.remove(), 1200);
       }
 
       // Create particles for text elements
@@ -407,32 +429,79 @@
           textNodes.push(char);
 
           const angle = Math.random() * Math.PI * 2;
-          const velocity = 1 + Math.random() * 2;
+          const velocity = 1 + Math.random() * 3;
           const vx = Math.cos(angle) * velocity;
           const vy = Math.sin(angle) * velocity;
 
-          char.animate([
-            { transform: 'translate(0, 0)', opacity: 1 },
-            { transform: `translate(${vx * 80}px, ${vy * 80}px)`, opacity: 0 }
-          ], {
-            duration: 800,
-            easing: 'ease-out',
-            fill: 'forwards'
-          });
-
-          setTimeout(() => char.remove(), 800);
+          if (char.animate) {
+            char.animate([
+              { transform: 'translate(0, 0)', opacity: 1 },
+              { transform: `translate(${vx * 100}px, ${vy * 100}px)`, opacity: 0 }
+            ], {
+              duration: 1000,
+              easing: 'ease-out',
+              fill: 'forwards'
+            });
+          } else {
+            char.style.transform = `translate(${vx * 100}px, ${vy * 100}px)`;
+            char.classList.add('move');
+          }
+          setTimeout(() => char.remove(), 1000);
         }
       });
 
+      // Create particles for the poster image
+      if (poster && poster.src) {
+        const posterRect = poster.getBoundingClientRect();
+        const particleSize = 12;
+        const cols = Math.ceil(posterRect.width / particleSize);
+        const rows = Math.ceil(posterRect.height / particleSize);
+        for (let i = 0; i < cols * rows / 4; i++) { // Reduced for performance
+          const particle = document.createElement('div');
+          particle.className = 'particle-image';
+          const x = (i % cols) * particleSize;
+          const y = Math.floor(i / cols) * particleSize;
+          particle.style.left = `${posterRect.left + x}px`;
+          particle.style.top = `${posterRect.top + y}px`;
+          particle.style.backgroundImage = `url(${poster.src})`;
+          particle.style.backgroundPosition = `-${x}px -${y}px`;
+          document.body.appendChild(particle);
+          imageParticles.push(particle);
+
+          const angle = Math.random() * Math.PI * 2;
+          const velocity = 2 + Math.random() * 3;
+          const vx = Math.cos(angle) * velocity;
+          const vy = Math.sin(angle) * velocity;
+
+          if (particle.animate) {
+            particle.animate([
+              { transform: 'translate(0, 0)', opacity: 1 },
+              { transform: `translate(${vx * 120}px, ${vy * 120}px)`, opacity: 0 }
+            ], {
+              duration: 1200,
+              easing: 'ease-out',
+              fill: 'forwards'
+            });
+          } else {
+            particle.style.transform = `translate(${vx * 120}px, ${vy * 120}px)`;
+            particle.classList.add('move');
+          }
+          setTimeout(() => particle.remove(), 1200);
+        }
+      }
+
       // Hide the card during animation
       card.classList.add('deleting');
+      console.log(`Created ${particles.length} background particles, ${textNodes.length} text particles, ${imageParticles.length} image particles`);
 
       // Remove card and particles after animation
       setTimeout(() => {
         card.remove();
         particles.forEach(p => p.remove());
         textNodes.forEach(t => t.remove());
-      }, 1000);
+        imageParticles.forEach(p => p.remove());
+        console.log('Particle animation completed, card and particles removed');
+      }, 1200);
     }
 
     // ======= RENDER LIST =======
@@ -685,7 +754,10 @@
               createParticleEffect(card);
               setTimeout(() => {
                 renderList();
-              }, 1000);
+              }, 1200);
+            } else {
+              console.warn('Card not found for key:', key);
+              renderList();
             }
           });
           return;
