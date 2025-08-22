@@ -58,8 +58,8 @@
       background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0)), var(--card);
       border: 1px solid #1f2937; border-radius: var(--radius); overflow: hidden;
       box-shadow: var(--shadow); display: flex; flex-direction: column;
-      transition: transform .18s ease, box-shadow .18s ease;
-      will-change: transform;
+      transition: opacity 0.5s ease, transform 0.5s ease; /* Smooth fade and reposition */
+      will-change: opacity, transform;
       position: relative;
     }
     .sortable .card { cursor: grab }
@@ -108,22 +108,11 @@
     body.noselect { user-select: none }
     .card.dragging { opacity: .6; cursor: grabbing; box-shadow: 0 16px 40px rgba(0,0,0,.55) }
 
-    /* Thanos Effect (JS-Driven) */
+    /* Fade-Out Animation for Deletion */
     .card.removing {
-      position: relative;
-      visibility: hidden; /* Сохраняем пространство карточки для анимации */
-      pointer-events: none;
-      transition: visibility 0s linear 3.5s; /* Скрываем после анимации (3.5s как в Red Stapler) */
-    }
-    .card.removing .poster,
-    .card.removing .content,
-    .card.removing .actions {
       opacity: 0;
-      transition: opacity 0.2s ease; /* Быстрое исчезновение содержимого */
-    }
-    .dust {
-      position: absolute;
-      z-index: 1000; /* Обеспечиваем видимость поверх других элементов */
+      visibility: hidden;
+      transition: opacity 0.5s ease, visibility 0s linear 0.5s; /* Fade out over 0.5s */
     }
   </style>
 </head>
@@ -182,11 +171,6 @@
       </div>
     </div>
   </div>
-
-  <!-- External Dependencies for Thanos Effect -->
-  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-easing/1.4.1/jquery.easing.min.js"></script>
 
   <script type="module">
     'use strict'
@@ -335,135 +319,6 @@
       }, (error) => console.error('Ошибка загрузки:', error));
     }
 
-    // ======= PARTICLES ANIMATION (JS Thanos Effect) =======
-    const canvasCount = 35;
-    const imageDataArray = [];
-
-    function weightedRandomDistrib(peak) {
-      const prob = [];
-      const seq = [];
-      for (let i = 0; i < canvasCount; i++) {
-        prob.push(Math.pow(canvasCount - Math.abs(peak - i), 3));
-        seq.push(i);
-      }
-      const total = prob.reduce((a, b) => a + b, 0);
-      let rand = Math.random() * total;
-      for (let i = 0; i < prob.length; i++) {
-        rand -= prob[i];
-        if (rand <= 0) return seq[i];
-      }
-      return seq[seq.length - 1];
-    }
-
-    function animateBlur(elem, radius, duration) {
-      $({ rad: 0 }).animate({ rad: radius }, {
-        duration: duration,
-        easing: "easeOutQuad",
-        step: function(now) {
-          elem.css({ filter: 'blur(' + now + 'px)' });
-        }
-      });
-    }
-
-    function animateTransform(elem, sx, sy, angle, duration) {
-      let tx = 0, ty = 0, td = 0;
-      $({ x: 0, y: 0, deg: 0 }).animate({ x: sx, y: sy, deg: angle }, {
-        duration: duration,
-        easing: "easeInQuad",
-        step: function(now, fx) {
-          if (fx.prop === "x") tx = now;
-          else if (fx.prop === "y") ty = now;
-          else if (fx.prop === "deg") td = now;
-          elem.css({
-            transform: 'rotate(' + td + 'deg) translate(' + tx + 'px,' + ty + 'px)'
-          });
-        }
-      });
-    }
-
-    function createBlankImageData(imageData) {
-      for (let i = 0; i < canvasCount; i++) {
-        let arr = new Uint8ClampedArray(imageData.data.length);
-        for (let j = 0; j < arr.length; j++) {
-          arr[j] = 0;
-        }
-        imageDataArray.push(arr);
-      }
-    }
-
-    function newCanvasFromImageData(imageDataArray, w, h) {
-      const canvas = document.createElement('canvas');
-      canvas.width = w;
-      canvas.height = h;
-      const tempCtx = canvas.getContext('2d');
-      tempCtx.putImageData(new ImageData(imageDataArray, w, h), 0, 0);
-      return canvas;
-    }
-
-    function initParticles(card, callback) {
-      if (!card) {
-        console.error('Card element not found for Thanos effect');
-        callback();
-        return;
-      }
-      console.log('Starting Thanos effect for card:', card.getAttribute('data-key'));
-
-      // Capture card as image using html2canvas
-      html2canvas(card, { backgroundColor: null }).then(canvas => {
-        const ctx = canvas.getContext('2d');
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const pixelArr = imageData.data;
-
-        // Clear previous imageDataArray
-        imageDataArray.length = 0;
-        createBlankImageData(imageData);
-
-        // Distribute pixel data
-        for (let i = 0; i < pixelArr.length; i += 4) {
-          let p = Math.floor((i / pixelArr.length) * canvasCount);
-          let a = imageDataArray[weightedRandomDistrib(p)];
-          a[i] = pixelArr[i];
-          a[i + 1] = pixelArr[i + 1];
-          a[i + 2] = pixelArr[i + 2];
-          a[i + 3] = pixelArr[i + 3];
-        }
-
-        // Create and append canvases
-        const cardRect = card.getBoundingClientRect();
-        for (let i = 0; i < canvasCount; i++) {
-          let c = newCanvasFromImageData(imageDataArray[i], canvas.width, canvas.height);
-          c.classList.add('dust');
-          c.style.position = 'absolute';
-          c.style.left = `${cardRect.left}px`;
-          c.style.top = `${cardRect.top}px`;
-          document.body.appendChild(c);
-        }
-
-        // Fade out card content
-        $(card).children().not('.dust').fadeOut(3500);
-
-        // Animate canvases
-        $('.dust').each(function(index) {
-          animateBlur($(this), 0.8, 800);
-          setTimeout(() => {
-            animateTransform($(this), 100, -100, Math.floor(Math.random() * 30 - 15), 800 + (110 * index));
-          }, 70 * index);
-          $(this).delay(70 * index).fadeOut((110 * index) + 800, "easeInQuint", () => {
-            $(this).remove();
-          });
-        });
-
-        // Call callback after animation
-        setTimeout(() => {
-          console.log('Thanos effect completed');
-          callback();
-        }, 3500); // Match Red Stapler duration
-      }).catch(err => {
-        console.error('html2canvas error:', err);
-        callback(); // Fallback to ensure deletion proceeds
-      });
-    }
-
     // ======= SUGGESTIONS UI =======
     function openSuggestions(items) {
       state.suggestions = items;
@@ -557,14 +412,18 @@
       const confirmHandler = () => {
         console.log('Confirming deletion for key:', key);
         if (card) {
+          // Capture positions before deletion
+          const beforeMap = captureRects(el.list);
           card.classList.add('removing');
-          initParticles(card, () => {
-            console.log('Particles animation completed, removing item:', key);
+          setTimeout(() => {
+            console.log('Fade animation completed, removing item:', key);
             delete state.items[key];
             state.order = state.order.filter(x => x !== key);
             save();
             renderList();
-          });
+            // Animate remaining cards to new positions
+            animateFlip(el.list, beforeMap);
+          }, 500); // Match CSS transition duration (0.5s)
         } else {
           console.error('Card not found for key:', key);
           delete state.items[key];
@@ -654,9 +513,11 @@
         const dx = before.left - after.left;
         const dy = before.top - after.top;
         if (dx || dy) {
+          el.style.transition = 'none'; // Disable transition for initial positioning
           el.style.transform = `translate(${dx}px, ${dy}px)`;
-          el.getBoundingClientRect(); // force reflow
+          el.getBoundingClientRect(); // Force reflow
           requestAnimationFrame(() => {
+            el.style.transition = 'transform 0.5s ease'; // Re-enable transition
             el.style.transform = '';
           });
         }
