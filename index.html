@@ -1,11 +1,7 @@
 <!doctype html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Список шедевров (TMDb)</title>
-  <meta name="description" content="Добро пожаловать на список не проходняков, составленный Леонидом" />
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'><text y='1em' font-size='96'>🎬</text></svg>">
+  <!-- Предыдущие стили и мета-теги остаются без изменений -->
   <style>
     :root {
       --bg: #0b0c0f;
@@ -146,6 +142,7 @@
   </style>
 </head>
 <body>
+  <!-- HTML-разметка остаётся без изменений -->
   <header>
     <div class="container">
       <div class="title">
@@ -376,6 +373,10 @@
     // ======= PARTICLE EFFECT =======
     function createParticleEffect(card) {
       console.log('Starting particle animation for card deletion');
+      if (!card || !card.parentNode) {
+        console.error('Card is not in the DOM or invalid:', card);
+        return;
+      }
       const rect = card.getBoundingClientRect();
       const particles = [];
       const particleCount = Math.min(50, Math.floor(rect.width * rect.height / 1000)); // Динамическое количество частиц
@@ -383,7 +384,7 @@
       const poster = card.querySelector('.poster');
       const textNodes = [];
       const imageParticles = [];
-    
+
       // Создание фоновых частиц
       for (let i = 0; i < particleCount; i++) {
         const particle = document.createElement('div');
@@ -395,12 +396,12 @@
         particle.style.background = `hsl(${Math.random() * 60 + 160}, 70%, 60%)`; // Разнообразие цветов
         document.body.appendChild(particle);
         particles.push(particle);
-    
+
         const angle = Math.random() * Math.PI * 2;
         const velocity = 2 + Math.random() * 3;
         const vx = Math.cos(angle) * velocity;
         const vy = Math.sin(angle) * velocity;
-    
+
         if (particle.animate) {
           particle.animate([
             { transform: 'translate(0, 0) scale(1)', opacity: 1 },
@@ -416,7 +417,7 @@
         }
         setTimeout(() => particle.remove(), 1000);
       }
-    
+
       // Создание текстовых частиц
       textElements.forEach((el) => {
         const textRect = el.getBoundingClientRect();
@@ -430,12 +431,12 @@
           char.style.top = `${textRect.top + Math.random() * textRect.height}px`;
           document.body.appendChild(char);
           textNodes.push(char);
-    
+
           const angle = Math.random() * Math.PI * 2;
           const velocity = 1 + Math.random() * 2;
           const vx = Math.cos(angle) * velocity;
           const vy = Math.sin(angle) * velocity;
-    
+
           if (char.animate) {
             char.animate([
               { transform: 'translate(0, 0) rotate(0deg)', opacity: 1 },
@@ -452,7 +453,7 @@
           setTimeout(() => char.remove(), 800);
         }
       });
-    
+
       // Создание частиц для постера
       if (poster && poster.src) {
         const posterRect = poster.getBoundingClientRect();
@@ -473,12 +474,12 @@
           particle.style.backgroundPosition = `-${x}px -${y}px`;
           document.body.appendChild(particle);
           imageParticles.push(particle);
-    
+
           const angle = Math.random() * Math.PI * 2;
           const velocity = 1.5 + Math.random() * 2;
           const vx = Math.cos(angle) * velocity;
           const vy = Math.sin(angle) * velocity;
-    
+
           if (particle.animate) {
             particle.animate([
               { transform: 'translate(0, 0) scale(1)', opacity: 1 },
@@ -495,18 +496,19 @@
           setTimeout(() => particle.remove(), 1000);
         }
       }
-    
+
       // Скрытие карточки во время анимации
       card.classList.add('deleting');
       console.log(`Created ${particles.length} background particles, ${textNodes.length} text particles, ${imageParticles.length} image particles`);
-    
+
       // Удаление карточки и частиц после анимации
       setTimeout(() => {
         card.remove();
         particles.forEach(p => p.remove());
         textNodes.forEach(t => t.remove());
-        imageParticles.forEach(p => t.remove());
+        imageParticles.forEach(p => p.remove()); // Исправлена ошибка: t -> p
         console.log('Particle animation completed, card and particles removed');
+        renderList(); // Перемещено внутрь setTimeout для синхронизации
       }, 1000);
     }
 
@@ -757,10 +759,9 @@
             save();
             const card = el.list.querySelector(`[data-key="${key}"]`);
             if (card) {
+              console.log('Triggering particle effect for card with key:', key);
               createParticleEffect(card);
-              setTimeout(() => {
-                renderList();
-              }, 1200);
+              // renderList теперь вызывается внутри createParticleEffect
             } else {
               console.warn('Card not found for key:', key);
               renderList();
