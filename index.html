@@ -57,7 +57,6 @@
     }
     @media (max-width: 900px) { .list { grid-template-columns: repeat(6, 1fr) } }
     @media (max-width: 640px) { .list { grid-template-columns: repeat(4, 1fr) } }
-
     .card {
       grid-column: span 4;
       background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0)), var(--card);
@@ -233,6 +232,8 @@
     // Firebase
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
     import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
+    // Interact.js
+    import interact from 'https://cdn.jsdelivr.net/npm/interactjs@latest/dist/interact.min.js';
 
     const firebaseConfig = {
       apiKey: "AIzaSyDu8R38EkqOxBDkcgfnYf5mBTCosQsOoGA",
@@ -401,7 +402,7 @@
       const rating = (m.vote_average && m.vote_count>0) ? `⭐${Number(m.vote_average).toFixed(1)}` : '';
       const runtime = (m.runtime ? `${m.runtime} min` : (Array.isArray(m.episode_run_time) && m.episode_run_time[0]) ? `${m.episode_run_time[0]} min` : '');
       const description = m.overview ? `<p class="description">${esc(m.overview)}</p>` : '';
-      return `<article class="card" draggable="${allowedDevice}" data-key="${esc(key)}" aria-grabbed="false">
+      return `<article class="card" data-key="${esc(key)}" aria-grabbed="false">
         <img class="poster" src="${esc(poster)}" alt="Poster for ${esc(title)}" loading="lazy" />
         <div class="content">
           <h3 style="margin:0 0 6px">${esc(title)} ${year ? `<span class="pill" style="margin-left:6px">${esc(year)}</span>` : ''}</h3>
@@ -518,78 +519,72 @@
       $$('.suggestion', el.suggestions).forEach((n, i) => n.setAttribute('aria-selected', String(i===state.selectedIndex)));
     }
 
-    // ======= DRAG & DROP =======
+    // ======= DRAG & DROP with Interact.js =======
     function initCustomDnD() {
       if (!allowedDevice) return;
       const container = el.list;
-      let dragEl = null;
-      let dragKey = null;
 
-      function getDropPosition(y) {
-        const cards = $$('.card:not(.dragging)', container);
-        if (!cards.length) return { index: 0, insertBefore: true };
-        const positions = cards.map((card, i) => {
-          const rect = card.getBoundingClientRect();
-          const centerY = rect.top + rect.height / 2;
-          return { card, index: i, centerY, distance: Math.abs(y - centerY) };
-        });
-        positions.sort((a, b) => a.distance - b.distance);
-        const closest = positions[0];
-        const rect = closest.card.getBoundingClientRect();
-        const insertBefore = y <= closest.centerY;
-        return { index: closest.index + (insertBefore ? 0 : 1), insertBefore };
-      }
+      // Enable draggable on .card elements
+      interact('.card').draggable({
+        // Restrict dragging to container
+        modifiers: [
+          interact.modifiers.restrict({
+            restriction: container,
+            elementRect: { top: 0, left: 0, bottom: 1, right: 1 },
+          }),
+        ],
+        // Ignore buttons
+        ignoreFrom: '.btn-ghost, button',
+        listeners: {
+          start(event) {
+            const target = event.target;
+            target.classList.add('dragging');
+            target.setAttribute('aria-grabbed', 'true');
+            document.body.classList.add('noselect');
+            console.log('Drag started:', target.getAttribute('data-key'));
+          },
+          move: debounce((event) => {
+            // No visual movement needed, just maintain drag state
+          }, 10),
+          end(event) {
+            const target = event.target;
+            target.classList.remove('dragging');
+            target.setAttribute('aria-grabbed', 'false');
+            document.body.classList.remove('noselect');
 
-      function cleanup() {
-        if (dragEl) {
-          dragEl.classList.remove('dragging');
-          dragEl.setAttribute('aria-grabbed', 'false');
-        }
-        dragEl = null;
-        dragKey = null;
-        document.body.classList.remove('noselect');
-        document.removeEventListener('mousemove', onMouseMove);
-        document.removeEventListener('mouseup', onMouseUp);
-        container.removeEventListener('mouseleave', onMouseLeave);
-      }
+            const dragKey = target.getAttribute('data-key');
+            const y = event.clientY;
+            const cards = $$('.card:not(.dragging)', container);
+            let dropIndex = state.order.length; // Default: append to end
 
-      function onMouseDown(e) {
-        if (e.button !== 0) return; // Only LMB
-        const card = e.target.closest('.card');
-        if (!card || e.target.closest('.btn-ghost, button')) return; // Ignore buttons
-        e.preventDefault();
-        dragEl = card;
-        dragKey = card.getAttribute('data-key');
-        dragEl.classList.add('dragging');
-        dragEl.setAttribute('aria-grabbed', 'true');
-        document.body.classList.add('noselect');
-        document.addEventListener('mousemove', onMouseMove);
-        document.addEventListener('mouseup', onMouseUp);
-        container.addEventListener('mouseleave', onMouseLeave);
-      }
+            if (cards.length) {
+              const positions = cards.map((card, i) => {
+                const rect = card.getBoundingClientRect();
+                const centerY = rect.top + rect.height / 2;
+                return { card, index: i, centerY, distance: Math.abs(y - centerY) };
+              });
+              positions.sort((a, b) => a.distance - b.distance);
+              const closest = positions[0];
+              dropIndex = closest.index + (y <= closest.centerY ? 0 : 1);
+            }
 
-      const onMouseMove = debounce((e) => {
-        if (!dragEl) return;
-        // No visual feedback needed, just maintain drag state
-      }, 10);
+            const newOrder = state.order.filter(key => key !== dragKey);
+            newOrder.splice(dropIndex, 0, dragKey);
+            state.order = newOrder;
+            console.log('New order after drop:', state.order);
+            save();
+            renderList();
+          },
+        },
+      });
 
-      function onMouseUp(e) {
-        if (!dragEl || !dragKey) return;
-        const dropPos = getDropPosition(e.clientY);
-        const newOrder = state.order.filter(key => key !== dragKey);
-        newOrder.splice(dropPos.index, 0, dragKey);
-        state.order = newOrder;
-        save();
-        console.log('New order after drop:', state.order);
-        renderList();
-        cleanup();
-      }
-
-      function onMouseLeave() {
-        cleanup();
-      }
-
-      container.addEventListener('mousedown', onMouseDown);
+      // Enable dropzone on container
+      interact(container).dropzone({
+        accept: '.card',
+        ondrop: (event) => {
+          // Handled in draggable end, no additional logic needed
+        },
+      });
     }
 
     // ======= BOOT =======
