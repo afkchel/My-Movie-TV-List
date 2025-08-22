@@ -554,48 +554,16 @@
       });
     }
 
-    // ======= «Рассыпание» + ЗВУК =======
+    const DELETE_SOUND_URL = "https://raw.githubusercontent.com/<твое_имя>/<repo>/main/delete-sound.mp3";
+
+    let deleteAudio;
     function playCrashSound() {
-      // Простая синтезированная «стеклянная» трещина: шум + краткий тон
-      const ctx = playCrashSound.ctx || (playCrashSound.ctx = new (window.AudioContext || window.webkitAudioContext)());
-      const now = ctx.currentTime;
-      // Белый шум
-      const bufferSize = ctx.sampleRate * 0.35;
-      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-      const data = buffer.getChannelData(0);
-      for (let i = 0; i < bufferSize; i++) {
-        // экспоненциальное затухание
-        const t = i / bufferSize;
-        data[i] = (Math.random() * 2 - 1) * (1 - t) * (1 - t);
+      if (!deleteAudio) {
+        deleteAudio = new Audio(DELETE_SOUND_URL);
+        deleteAudio.preload = "auto";
       }
-      const noise = ctx.createBufferSource();
-      noise.buffer = buffer;
-
-      // Фильтр ВЧ
-      const highpass = ctx.createBiquadFilter();
-      highpass.type = 'highpass';
-      highpass.frequency.setValueAtTime(1200, now);
-
-      // Небольшой «дзынь» — синус
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(1200, now);
-      osc.frequency.exponentialRampToValueAtTime(450, now + 0.25);
-      gain.gain.setValueAtTime(0.2, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
-
-      const master = ctx.createGain();
-      master.gain.value = 0.9;
-
-      noise.connect(highpass).connect(master);
-      osc.connect(gain).connect(master);
-      master.connect(ctx.destination);
-
-      noise.start(now);
-      noise.stop(now + 0.35);
-      osc.start(now);
-      osc.stop(now + 0.32);
+      deleteAudio.currentTime = 0;
+      deleteAudio.play().catch(() => {});
     }
 
     function shatterCard(card, duration = 700, pieces = 28) {
