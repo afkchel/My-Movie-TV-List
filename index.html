@@ -49,16 +49,25 @@
     .suggestion .meta { display: flex; flex-direction: column; gap: 4px }
     .pill { font-size: 12px; color: var(--muted); padding: 2px 8px; border: 1px solid #374151; border-radius: 999px }
     main .container { padding-top: 10px }
-    .list { display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px }
+    .list {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 16px;
+      align-items: start; /* Allow cards to have different heights */
+    }
     @media (max-width: 900px) { .list { grid-template-columns: repeat(6, 1fr) } }
     @media (max-width: 640px) { .list { grid-template-columns: repeat(4, 1fr) } }
 
     .card {
       grid-column: span 4;
       background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0)), var(--card);
-      border: 1px solid #1f2937; border-radius: var(--radius); overflow: hidden;
-      box-shadow: var(--shadow); display: flex; flex-direction: column;
-      transition: opacity 1s ease, transform 1s cubic-bezier(0.68, -0.55, 0.265, 1.55); /* Longer duration, elastic easing */
+      border: 1px solid #1f2937;
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      transition: opacity 1s ease, transform 1s cubic-bezier(0.68, -0.55, 0.265, 1.55);
       will-change: opacity, transform;
       position: relative;
     }
@@ -66,15 +75,54 @@
     .card.wide { grid-column: span 6 }
     @media (max-width: 640px) { .card, .card.wide { grid-column: span 4 } }
     .poster { width: 100%; aspect-ratio: 3 / 4.2; object-fit: cover; background: #0b1220 }
-    .content { padding: 12px 14px 16px }
+    .content { padding: 12px 14px 16px; flex: 0 0 auto; } /* No forced height */
     .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 6px 0 }
-    .actions { margin-top: auto; display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 12px 14px; border-top: 1px solid #1f2937; background: #0c111b; flex-wrap: wrap }
-    button, .btn { appearance: none; border: 1px solid #2b3443; background: #111827; color: var(--text); padding: 10px 14px; border-radius: 12px; cursor: pointer; font-weight: 600; box-shadow: var(--shadow) }
+    .description { /* New class for description */
+      color: var(--muted);
+      line-height: 1.5;
+      margin: 6px 0 0; /* Reduced margin */
+      font-size: 14px;
+    }
+    .actions {
+      margin-top: auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 14px;
+      border-top: 1px solid #1f2937;
+      background: #0c111b;
+      flex-wrap: wrap
+    }
+    button, .btn {
+      appearance: none;
+      border: 1px solid #2b3443;
+      background: #111827;
+      color: var(--text);
+      padding: 10px 14px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: 600;
+      box-shadow: var(--shadow)
+    }
     button:hover { background: #0f172a; border-color: #3b475a }
     .btn-ghost {
-      background: transparent; border: 1px solid #374151; display: inline-flex; align-items: center; justify-content: center;
-      vertical-align: middle; text-align: center; line-height: 1.5; padding: 10px 14px; border-radius: 12px; color: var(--text);
-      text-decoration: none; font-weight: 600; box-sizing: border-box; min-width: 80px; font-size: 16px
+      background: transparent;
+      border: 1px solid #374151;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      vertical-align: middle;
+      text-align: center;
+      line-height: 1.5;
+      padding: 10px 14px;
+      border-radius: 12px;
+      color: var(--text);
+      text-decoration: none;
+      font-weight: 600;
+      box-sizing: border-box;
+      min-width: 80px;
+      font-size: 16px
     }
     .btn-ghost:hover { background: #0f172a; border-color: #3b475a }
     .btn-danger { border-color: #7f1d1d; background: #1f0f12 }
@@ -112,7 +160,7 @@
     .card.removing {
       opacity: 0;
       visibility: hidden;
-      transition: opacity 0.5s ease, visibility 0s linear 0.5s; /* Unchanged fade-out */
+      transition: opacity 0.5s ease, visibility 0s linear 0.5s;
     }
 
     /* Animating state to prevent grid jumps */
@@ -358,12 +406,14 @@
       const genres = (m.genres||[]).slice(0,3).map(g=>`<span class="pill">${esc(g.name)}</span>`).join('');
       const rating = (m.vote_average && m.vote_count>0) ? `⭐${Number(m.vote_average).toFixed(1)}` : '';
       const runtime = (m.runtime ? `${m.runtime} min` : (Array.isArray(m.episode_run_time) && m.episode_run_time[0]) ? `${m.episode_run_time[0]} min` : '');
+      // Conditionally include description only if m.overview exists and is non-empty
+      const description = m.overview ? `<p class="description">${esc(m.overview)}</p>` : '';
       return `<article class="card" draggable="${allowedDevice}" data-key="${esc(key)}" aria-grabbed="false">
         <img class="poster" src="${esc(poster)}" alt="Poster for ${esc(title)}" loading="lazy" />
         <div class="content">
-          <h3 style="margin:0 0 6px">${esc(title)} ${year ? `<span class=\"pill\" style=\"margin-left:6px\">${esc(year)}</span>`:''}</h3>
+          <h3 style="margin:0 0 6px">${esc(title)} ${year ? `<span class="pill" style="margin-left:6px">${esc(year)}</span>` : ''}</h3>
           <div class="row">${genres}</div>
-          <p style="color:var(--muted); line-height:1.5; margin: 8px 0 0">${esc(m.overview || 'No description.')}</p>
+          ${description}
         </div>
         <div class="actions">
           <div class="row" style="gap:8px">
@@ -432,8 +482,8 @@
               console.log('Calling renderList after fade and repositioning');
               renderList();
               animateFlip(el.list, beforeMap);
-            }, 1000); // Wait for fade (0.5s) + repositioning (1s)
-          }, 500); // Match fade-out duration (0.5s)
+            }, 1000);
+          }, 500);
         } else {
           console.error('Card not found for key:', key);
           delete state.items[key];
@@ -482,7 +532,7 @@
       $$('.suggestion', el.suggestions).forEach((n, i) => n.setAttribute('aria-selected', String(i===state.selectedIndex)));
     }
 
-    // ======= DRAG & DROP (только разрешённое устройство) =======
+    // ======= DRAG & DROP =======
     let dragEl = null;
 
     function setDragImage(e) {
@@ -536,7 +586,6 @@
         const dy = before.top - after.top;
         if (dx !== 0 || dy !== 0) {
           console.log(`Animating card ${before.index}: dx=${dx}, dy=${dy}, delay=${before.index * 100}ms`);
-          // Set initial position using absolute positioning
           el.classList.add('animating');
           el.style.position = 'absolute';
           el.style.left = `${before.left}px`;
@@ -545,13 +594,12 @@
           el.style.height = `${before.height}px`;
           el.style.transform = `translate(${dx}px, ${dy}px) scale(1.05)`;
           el.style.opacity = '0.85';
-          el.getBoundingClientRect(); // Force reflow
+          el.getBoundingClientRect();
           requestAnimationFrame(() => {
             el.style.transition = `transform 1s cubic-bezier(0.68, -0.55, 0.265, 1.55) ${before.index * 100}ms, opacity 1s ease ${before.index * 100}ms`;
             el.style.transform = 'translate(0, 0) scale(1)';
             el.style.opacity = '1';
             console.log('Applied transform for card:', el, el.style.transform, 'Transition:', el.style.transition);
-            // Remove absolute positioning after animation
             setTimeout(() => {
               el.style.position = '';
               el.style.left = '';
@@ -565,7 +613,6 @@
           console.log(`No movement for card ${before.index}: dx=${dx}, dy=${dy}`);
         }
       });
-      // Log completion
       setTimeout(() => {
         console.log('Animations completed');
       }, 1000 + (beforeMap.size * 100));
