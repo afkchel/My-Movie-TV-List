@@ -58,7 +58,7 @@
       background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0)), var(--card);
       border: 1px solid #1f2937; border-radius: var(--radius); overflow: hidden;
       box-shadow: var(--shadow); display: flex; flex-direction: column;
-      transition: opacity 0.5s ease, transform 0.5s ease; /* Smooth fade and reposition */
+      transition: opacity 0.5s ease, transform 0.5s ease-in-out; /* Smoother easing for floating effect */
       will-change: opacity, transform;
       position: relative;
     }
@@ -112,7 +112,7 @@
     .card.removing {
       opacity: 0;
       visibility: hidden;
-      transition: opacity 0.5s ease, visibility 0s linear 0.5s; /* Fade out over 0.5s */
+      transition: opacity 0.5s ease, visibility 0s linear 0.5s; /* Unchanged fade-out */
     }
   </style>
 </head>
@@ -421,7 +421,7 @@
             state.order = state.order.filter(x => x !== key);
             save();
             renderList();
-            // Animate remaining cards to new positions
+            // Animate remaining cards with floating effect
             animateFlip(el.list, beforeMap);
           }, 500); // Match CSS transition duration (0.5s)
         } else {
@@ -500,25 +500,29 @@
 
     function captureRects(container) {
       const map = new Map();
-      container.querySelectorAll('.card').forEach(el => map.set(el, el.getBoundingClientRect()));
+      container.querySelectorAll('.card').forEach((el, index) => {
+        map.set(el, { rect: el.getBoundingClientRect(), index });
+      });
       return map;
     }
 
     function animateFlip(container, beforeMap) {
       const afterMap = new Map();
-      container.querySelectorAll('.card').forEach(el => afterMap.set(el, el.getBoundingClientRect()));
+      container.querySelectorAll('.card').forEach((el, index) => {
+        afterMap.set(el, { rect: el.getBoundingClientRect(), index });
+      });
       beforeMap.forEach((before, el) => {
         const after = afterMap.get(el);
         if (!after) return;
-        const dx = before.left - after.left;
-        const dy = before.top - after.top;
+        const dx = before.rect.left - after.rect.left;
+        const dy = before.rect.top - after.rect.top;
         if (dx || dy) {
           el.style.transition = 'none'; // Disable transition for initial positioning
-          el.style.transform = `translate(${dx}px, ${dy}px)`;
+          el.style.transform = `translate(${dx}px, ${dy}px) scale(1.02)`; // Slight scale for floating effect
           el.getBoundingClientRect(); // Force reflow
           requestAnimationFrame(() => {
-            el.style.transition = 'transform 0.5s ease'; // Re-enable transition
-            el.style.transform = '';
+            el.style.transition = `transform 0.5s ease-in-out ${before.index * 50}ms`; // Stagger by 50ms
+            el.style.transform = ''; // Reset to natural grid position
           });
         }
       });
