@@ -33,7 +33,7 @@
       min-height: 100dvh;
     }
     header { background: color-mix(in lab, var(--bg) 70%, transparent); border-bottom: 1px solid #1f2937 }
-    .container { max-width: 980px; margin: 0 auto; padding: 16px }
+    .container { max-width: 980px; margin: 0 auto; paddy: 16px }
     .title { display: flex; gap: 12px; align-items: center }
     .title h1 { margin: 0; font-weight: 800; letter-spacing: .2px; font-size: clamp(22px, 5vw, 30px) }
     .subtitle { margin: 6px 0 0; color: var(--muted); font-size: 14px }
@@ -245,7 +245,7 @@
 
     // ======= API HELPERS =======
     function apiUrl(path, params = {}) {
-      const base = new URL('https://api.themoviedb.org/3' + path);
+      const base = new URL(' https://api.themoviedb.org/3' + path);
       const sp = new URLSearchParams({ api_key: TMDB_API_KEY, language: LANGUAGE, ...params });
       base.search = sp.toString();
       return base.toString();
@@ -319,9 +319,16 @@
 
     // ======= PARTICLES ANIMATION =======
     function initParticles(card, callback) {
+      if (!card) {
+        console.error('Card element not found for particles animation');
+        callback(); // Выполняем callback, чтобы продолжить удаление
+        return;
+      }
+
       const rect = card.getBoundingClientRect();
       const canvas = document.createElement('canvas');
       canvas.className = 'particles-container';
+      canvas.id = `particles-${Math.random().toString(36).slice(2)}`; // Уникальный ID
       canvas.style.position = 'absolute';
       canvas.style.top = `${rect.top + window.scrollY}px`;
       canvas.style.left = `${rect.left + window.scrollX}px`;
@@ -329,7 +336,17 @@
       canvas.height = rect.height;
       card.parentNode.appendChild(canvas);
 
-      particlesJS(canvas, {
+      console.log('Initializing particles for card:', card.getAttribute('data-key'));
+
+      // Проверяем, доступна ли библиотека particlesJS
+      if (typeof particlesJS === 'undefined') {
+        console.error('particlesJS not loaded');
+        card.parentNode.removeChild(canvas);
+        callback();
+        return;
+      }
+
+      particlesJS(canvas.id, {
         particles: {
           number: { value: 80, density: { enable: true, value_area: 800 } },
           color: { value: '#ffffff' },
@@ -353,6 +370,7 @@
       });
 
       setTimeout(() => {
+        console.log('Removing particles canvas:', canvas.id);
         canvas.remove();
         callback();
       }, 1000); // Анимация длится 1 секунду
@@ -439,7 +457,7 @@
     }
 
     // ======= MODALS HELPERS =======
-    function openConfirmModal(title, onConfirm) {
+    function openConfirmModal(title, key, card) {
       el.modalTitle.textContent = title;
       el.modal.style.display = 'flex';
       const close = () => { el.modal.style.display = 'none'; cleanup(); };
@@ -448,7 +466,27 @@
         el.cancelDelete.removeEventListener('click', close);
         el.modal.removeEventListener('click', backdrop);
       };
-      const confirmHandler = () => { onConfirm(); close(); };
+      const confirmHandler = () => {
+        console.log('Confirming deletion for key:', key);
+        if (card) {
+          card.classList.add('removing');
+          initParticles(card, () => {
+            console.log('Particles animation completed, removing item:', key);
+            delete state.items[key];
+            state.order = state.order.filter(x => x !== key);
+            save();
+            renderList();
+          });
+        } else {
+          console.error('Card not found for key:', key);
+          // Удаляем без анимации, чтобы не нарушить логику
+          delete state.items[key];
+          state.order = state.order.filter(x => x !== key);
+          save();
+          renderList();
+        }
+        close();
+      };
       const backdrop = (e) => { if (e.target === el.modal) close(); };
       el.confirmDelete.addEventListener('click', confirmHandler, { once: true });
       el.cancelDelete.addEventListener('click', close);
@@ -572,6 +610,7 @@
             container.insertBefore(dragEl, nearest);
             animateFlip(container, before);
           }
+       usize: 0
         } else {
           container.appendChild(dragEl);
           animateFlip(container, before);
@@ -623,17 +662,16 @@
         if (delBtn) {
           const key = delBtn.getAttribute('data-remove');
           const m = state.items[key];
-          const title = m?.title || m?.name || 'Неизвестное произведение';
-          const card = delBtn.closest('.card');
-          openConfirmModal(title, () => {
-            card.classList.add('removing');
-            initParticles(card, () => {
-              delete state.items[key];
-              state.order = state.order.filter(x => x !== key);
-              save();
-              renderList();
-            });
-          });
+          if (!m) {
+            console.error('Item not found in state for key:', key);
+            return;
+          }
+          const title = m.title || m.name || 'Неизвестное произведение';
+          const card = el.list.querySelector(`.card[data-key="${key}"]`);
+          if (!card) {
+            console.error('Card not found for key:', key);
+          }
+          openConfirmModal(title, key, card);
           return;
         }
 
