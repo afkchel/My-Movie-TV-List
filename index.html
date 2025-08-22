@@ -112,9 +112,9 @@
     .card.removing { opacity: 0; pointer-events: none; transition: opacity 0.2s ease }
     .particles-container {
       position: absolute;
-      z-index: 1000; /* Высокий z-index для видимости */
+      z-index: 1000;
       pointer-events: none;
-      background: rgba(0, 0, 0, 0.2); /* Отладочный фон для проверки видимости */
+      background: transparent; /* Убрали отладочный фон */
     }
   </style>
 </head>
@@ -174,7 +174,7 @@
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tsparticles@3.5.0/tsparticles.bundle.min.js"></script>
   <script type="module">
     'use strict'
     // ======= CONFIG =======
@@ -322,7 +322,7 @@
       }, (error) => console.error('Ошибка загрузки:', error));
     }
 
-    // ======= PARTICLES ANIMATION =======
+    // ======= PARTICLES ANIMATION (tsParticles) =======
     function initParticles(card, callback) {
       if (!card) {
         console.error('Card element not found for particles animation');
@@ -340,44 +340,52 @@
       canvas.style.left = `${rect.left + window.scrollX}px`;
       canvas.width = rect.width;
       canvas.height = rect.height;
-      document.body.appendChild(canvas); // Добавляем в body для надёжного позиционирования
+      document.body.appendChild(canvas);
 
-      console.log('Creating particles canvas:', canvasId, 'at', rect);
+      console.log('Creating tsParticles canvas:', canvasId, 'at', rect);
 
-      if (typeof particlesJS === 'undefined') {
-        console.error('particlesJS not loaded');
+      if (typeof tsParticles === 'undefined') {
+        console.error('tsParticles not loaded');
         canvas.remove();
         callback();
         return;
       }
 
-      particlesJS(canvasId, {
-        particles: {
-          number: { value: 100, density: { enable: true, value_area: 800 } },
-          color: { value: '#ffffff' },
-          shape: { type: 'circle' },
-          opacity: { value: 0.8, random: true, anim: { enable: true, speed: 2, opacity_min: 0, sync: false } },
-          size: { value: 5, random: true },
-          line_linked: { enable: false },
-          move: {
-            enable: true,
-            speed: 8,
-            direction: 'none',
-            random: true,
-            straight: false,
-            out_mode: 'out',
-            bounce: false
-          }
-        },
-        interactivity: { detect_on: 'canvas', events: { onhover: { enable: false }, onclick: { enable: false } } },
-        retina_detect: true
-      });
-
-      setTimeout(() => {
-        console.log('Removing particles canvas:', canvasId);
+      tsParticles.load({
+        id: canvasId,
+        options: {
+          fullScreen: { enable: false },
+          particles: {
+            number: { value: 150, density: { enable: true, value_area: 800 } },
+            color: { value: '#ffffff' },
+            shape: { type: 'circle' },
+            opacity: { value: 0.8, random: true, anim: { enable: true, speed: 2, opacity_min: 0, sync: false } },
+            size: { value: 5, random: { enable: true, minimumValue: 2 } },
+            move: {
+              enable: true,
+              speed: 10,
+              direction: 'none',
+              random: true,
+              straight: false,
+              outModes: { default: 'out' },
+              attract: { enable: false }
+            }
+          },
+          interactivity: { events: { onHover: { enable: false }, onClick: { enable: false } } },
+          retina_detect: true,
+          fpsLimit: 60
+        }
+      }).then(() => {
+        setTimeout(() => {
+          console.log('Removing tsParticles canvas:', canvasId);
+          canvas.remove();
+          callback();
+        }, 1200);
+      }).catch(err => {
+        console.error('tsParticles load error:', err);
         canvas.remove();
         callback();
-      }, 1200); // Увеличил до 1.2 сек для более заметной анимации
+      });
     }
 
     // ======= SUGGESTIONS UI =======
@@ -622,8 +630,7 @@
 
     // ======= BOOT =======
     document.addEventListener('DOMContentLoaded', () => {
-      // Проверяем загрузку particles.js
-      console.log('Checking particlesJS:', typeof particlesJS);
+      console.log('Checking tsParticles:', typeof tsParticles);
 
       if (!allowedDevice) {
         el.searchbar.style.display = 'none';
