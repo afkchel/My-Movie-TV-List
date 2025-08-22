@@ -137,7 +137,7 @@
       <div class="title">
         <div style="font-size:26px">🎬</div>
         <div>
-          <h3>Список шедевров</h3>
+          <h1>Список шедевров</h1>
           <p class="subtitle">Добро пожаловать на список не проходняков, составленный Леонидом</p>
         </div>
       </div>
@@ -191,7 +191,7 @@
     'use strict'
     // ======= CONFIG =======
     const TMDB_API_KEY = "166bdfecdc09d46826d8662b9627ad27";
-    const TMDB_IMG_BASE = "https://image.tmdb.org/3/p/";
+    const TMDB_IMG_BASE = "https://image.tmdb.org/t/p/";
     const LANGUAGE = "ru";
     const YOUTUBE_API_KEY = "AIzaSyCUHWrkVFi1UO1y8NKSkWtrT_W1aZpdBDM";
     const SEARCH_DELAY_MS = 350;
@@ -370,7 +370,7 @@
       // Create particles for the card background
       for (let i = 0; i < particleCount; i++) {
         const particle = document.createElement('div');
-        particle.className = 'particle救助
+        particle.className = 'particle';
         particle.style.left = `${rect.left + Math.random() * rect.width}px`;
         particle.style.top = `${rect.top + Math.random() * rect.height}px`;
         document.body.appendChild(particle);
@@ -544,7 +544,6 @@
     let dragEl = null;
 
     function setDragImage(e) {
-      // Прозрачный drag-image, чтобы не мешал
       const img = new Image();
       img.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"></svg>';
       e.dataTransfer?.setDragImage(img, 0, 0);
@@ -576,7 +575,6 @@
     function animateFlip(container, beforeMap) {
       const afterMap = new Map();
       container.querySelectorAll('.card').forEach(el => afterMap.set(el, el.getBoundingClientRect()));
-      // Применяем FLIP
       beforeMap.forEach((before, el) => {
         const after = afterMap.get(el);
         if (!after) return;
@@ -584,7 +582,7 @@
         const dy = before.top - after.top;
         if (dx || dy) {
           el.style.transform = `translate(${dx}px, ${dy}px)`;
-          el.getBoundingClientRect(); // force reflow
+          el.getBoundingClientRect();
           requestAnimationFrame(() => {
             el.style.transform = '';
           });
@@ -612,7 +610,6 @@
         dragEl.setAttribute('aria-grabbed', 'false');
         dragEl = null;
         document.body.classList.remove('noselect');
-        // Сохраняем новый порядок
         state.order = [...container.querySelectorAll('.card')].map(el => el.getAttribute('data-key'));
         save();
       });
@@ -623,14 +620,11 @@
         const before = captureRects(container);
         const nearest = getNearestCard(container, e.clientX, e.clientY);
         if (nearest) {
-          // Вставляем перед ближайшей карточкой
           if (nearest !== dragEl) {
             container.insertBefore(dragEl, nearest);
             animateFlip(container, before);
- Provinces
           }
         } else {
-          // Если карточек нет или не нашли — кидаем в конец
           container.appendChild(dragEl);
           animateFlip(container, before);
         }
@@ -691,7 +685,7 @@
               createParticleEffect(card);
               setTimeout(() => {
                 renderList();
-              }, 1000); // Wait for animation to complete
+              }, 1000);
             }
           });
           return;
