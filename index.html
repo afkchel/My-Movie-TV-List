@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru">
 <head>
-  <!-- Предыдущие стили и мета-теги остаются без изменений -->
+  <!-- Предыдущие стили остаются без изменений -->
   <style>
     :root {
       --bg: #0b0c0f;
@@ -375,6 +375,7 @@
       console.log('Starting particle animation for card deletion');
       if (!card || !card.parentNode) {
         console.error('Card is not in the DOM or invalid:', card);
+        renderList();
         return;
       }
       const rect = card.getBoundingClientRect();
@@ -506,9 +507,9 @@
         card.remove();
         particles.forEach(p => p.remove());
         textNodes.forEach(t => t.remove());
-        imageParticles.forEach(p => p.remove()); // Исправлена ошибка: t -> p
+        imageParticles.forEach(p => p.remove());
         console.log('Particle animation completed, card and particles removed');
-        renderList(); // Перемещено внутрь setTimeout для синхронизации
+        renderList(); // Перемещено внутрь setTimeout
       }, 1000);
     }
 
@@ -550,6 +551,7 @@
         return;
       }
       el.list.innerHTML = state.order.map(key => cardTemplate(state.items[key], key)).join('');
+      console.log('List rendered with keys:', state.order);
     }
 
     // ======= ADD =======
@@ -753,18 +755,20 @@
           const key = delBtn.getAttribute('data-remove');
           const m = state.items[key];
           const title = m?.title || m?.name || 'Неизвестное произведение';
+          console.log('Attempting to delete card with key:', key);
           openConfirmModal(title, () => {
+            // Удаляем элемент из состояния
             delete state.items[key];
             state.order = state.order.filter(x => x !== key);
             save();
+            // Проверяем, существует ли карточка в DOM
             const card = el.list.querySelector(`[data-key="${key}"]`);
-            if (card) {
-              console.log('Triggering particle effect for card with key:', key);
+            if (card && card.parentNode) {
+              console.log('Card found, triggering particle effect for key:', key);
               createParticleEffect(card);
-              // renderList теперь вызывается внутри createParticleEffect
             } else {
               console.warn('Card not found for key:', key);
-              renderList();
+              renderList(); // Перерисовываем список, если карточка не найдена
             }
           });
           return;
