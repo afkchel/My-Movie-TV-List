@@ -54,6 +54,7 @@
       grid-template-columns: repeat(12, 1fr);
       gap: 16px;
       align-items: start;
+      position: relative; /* For absolute positioning of indicator */
     }
     @media (max-width: 900px) { .list { grid-template-columns: repeat(6, 1fr) } }
     @media (max-width: 640px) { .list { grid-template-columns: repeat(4, 1fr) } }
@@ -158,15 +159,15 @@
       opacity: 0.6;
       cursor: grabbing;
       box-shadow: 0 16px 40px rgba(0,0,0,.55);
-      transform: rotate(2deg); /* Slight rotation for dragging feedback */
+      transform: rotate(2deg);
     }
     .drop-indicator {
       position: absolute;
       height: 4px;
       background: white;
       z-index: 20;
-      transition: top 0.1s ease; /* Smooth indicator movement */
-      pointer-events: none; /* Prevent interference with mouse events */
+      transition: top 0.1s ease;
+      pointer-events: none;
     }
 
     /* Fade-Out Animation for Deletion */
@@ -579,7 +580,7 @@
           el.style.height = `${before.height}px`;
           el.style.transform = `translate(${dx}px, ${dy}px) scale(1.05)`;
           el.style.opacity = '0.85';
-          el.getBoundingClientRect();
+          el.getBoundingClientRect(); // Force reflow
           requestAnimationFrame(() => {
             el.style.transition = `transform 1s cubic-bezier(0.68, -0.55, 0.265, 1.55) ${before.index * 100}ms, opacity 1s ease ${before.index * 100}ms`;
             el.style.transform = 'translate(0, 0) scale(1)';
@@ -591,6 +592,8 @@
               el.style.top = '';
               el.style.width = '';
               el.style.height = '';
+              el.style.transform = '';
+              el.style.opacity = '';
               el.classList.remove('animating');
             }, 1000 + before.index * 100);
           });
@@ -607,10 +610,8 @@
       if (!allowedDevice) return;
       const container = el.list;
       let dragEl = null;
-      let dragClone = null;
       let indicator = null;
       let dragKey = null;
-      let startX = 0, startY = 0;
 
       function createIndicator() {
         const el = document.createElement('div');
@@ -661,10 +662,8 @@
           dragEl.classList.remove('dragging');
           dragEl.setAttribute('aria-grabbed', 'false');
         }
-        if (dragClone) dragClone.remove();
         if (indicator) indicator.remove();
         dragEl = null;
-        dragClone = null;
         indicator = null;
         dragKey = null;
         document.body.classList.remove('noselect');
@@ -683,34 +682,15 @@
         dragEl.classList.add('dragging');
         dragEl.setAttribute('aria-grabbed', 'true');
         document.body.classList.add('noselect');
-
-        // Create clone for visual feedback
-        dragClone = card.cloneNode(true);
-        dragClone.classList.add('dragging');
-        dragClone.style.position = 'absolute';
-        dragClone.style.zIndex = '30';
-        dragClone.style.pointerEvents = 'none';
-        const rect = card.getBoundingClientRect();
-        dragClone.style.width = `${rect.width}px`;
-        dragClone.style.height = `${rect.height}px`;
-        dragClone.style.left = `${rect.left}px`;
-        dragClone.style.top = `${rect.top}px`;
-        document.body.appendChild(dragClone);
-
-        startX = e.clientX;
-        startY = e.clientY;
-
         indicator = createIndicator();
+        updateIndicator(e.clientY);
         document.addEventListener('mousemove', onMouseMove);
         document.addEventListener('mouseup', onMouseUp);
         container.addEventListener('mouseleave', onMouseLeave);
       }
 
       function onMouseMove(e) {
-        if (!dragEl || !dragClone) return;
-        const dx = e.clientX - startX;
-        const dy = e.clientY - startY;
-        dragClone.style.transform = `translate(${dx}px, ${dy}px) rotate(2deg)`;
+        if (!dragEl) return;
         updateIndicator(e.clientY);
       }
 
@@ -726,8 +706,11 @@
           newOrder.splice(insertBefore ? targetIndex : targetIndex + 1, 0, dragKey);
           state.order = newOrder;
           save();
+          console.log('New order after drop:', state.order);
           renderList();
-          animateFlip(container, beforeMap);
+          requestAnimationFrame(() => {
+            animateFlip(container, beforeMap);
+          });
         }
         cleanup();
       }
