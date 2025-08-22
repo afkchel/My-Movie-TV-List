@@ -54,7 +54,6 @@
       grid-template-columns: repeat(12, 1fr);
       gap: 16px;
       align-items: start;
-      position: relative; /* For absolute positioning of indicator */
     }
     @media (max-width: 900px) { .list { grid-template-columns: repeat(6, 1fr) } }
     @media (max-width: 640px) { .list { grid-template-columns: repeat(4, 1fr) } }
@@ -155,13 +154,6 @@
     .card.dragging {
       opacity: 0.6;
       cursor: grabbing;
-    }
-    .drop-indicator {
-      position: absolute;
-      height: 4px;
-      background: white;
-      z-index: 20;
-      pointer-events: none;
     }
 
     /* Fade-Out Animation for Deletion */
@@ -531,51 +523,21 @@
       if (!allowedDevice) return;
       const container = el.list;
       let dragEl = null;
-      let indicator = null;
       let dragKey = null;
 
-      function createIndicator() {
-        const el = document.createElement('div');
-        el.className = 'drop-indicator';
-        container.appendChild(el);
-        return el;
-      }
-
-      function updateIndicator(y) {
+      function getDropPosition(y) {
         const cards = $$('.card:not(.dragging)', container);
-        let target = null;
-        let insertBefore = true;
-        for (const card of cards) {
+        if (!cards.length) return { index: 0, insertBefore: true };
+        const positions = cards.map((card, i) => {
           const rect = card.getBoundingClientRect();
-          const midY = rect.top + rect.height / 2;
-          if (y <= midY) {
-            target = card;
-            insertBefore = true;
-            break;
-          } else if (y <= rect.bottom) {
-            target = card;
-            insertBefore = false;
-            break;
-          }
-        }
-        if (target) {
-          const rect = target.getBoundingClientRect();
-          indicator.style.width = `${rect.width}px`;
-          indicator.style.left = `${rect.left}px`;
-          indicator.style.top = insertBefore ? `${rect.top - 2}px` : `${rect.bottom + 2}px`;
-          indicator.style.display = 'block';
-          return { target, insertBefore };
-        } else if (cards.length) {
-          const lastCard = cards[cards.length - 1];
-          const rect = lastCard.getBoundingClientRect();
-          indicator.style.width = `${rect.width}px`;
-          indicator.style.left = `${rect.left}px`;
-          indicator.style.top = `${rect.bottom + 2}px`;
-          indicator.style.display = 'block';
-          return { target: null, insertBefore: false };
-        }
-        indicator.style.display = 'none';
-        return null;
+          const centerY = rect.top + rect.height / 2;
+          return { card, index: i, centerY, distance: Math.abs(y - centerY) };
+        });
+        positions.sort((a, b) => a.distance - b.distance);
+        const closest = positions[0];
+        const rect = closest.card.getBoundingClientRect();
+        const insertBefore = y <= closest.centerY;
+        return { index: closest.index + (insertBefore ? 0 : 1), insertBefore };
       }
 
       function cleanup() {
@@ -583,9 +545,7 @@
           dragEl.classList.remove('dragging');
           dragEl.setAttribute('aria-grabbed', 'false');
         }
-        if (indicator) indicator.remove();
         dragEl = null;
-        indicator = null;
         dragKey = null;
         document.body.classList.remove('noselect');
         document.removeEventListener('mousemove', onMouseMove);
@@ -603,32 +563,25 @@
         dragEl.classList.add('dragging');
         dragEl.setAttribute('aria-grabbed', 'true');
         document.body.classList.add('noselect');
-        indicator = createIndicator();
-        updateIndicator(e.clientY);
         document.addEventListener('mousemove', onMouseMove);
         document.addEventListener('mouseup', onMouseUp);
         container.addEventListener('mouseleave', onMouseLeave);
       }
 
-      function onMouseMove(e) {
+      const onMouseMove = debounce((e) => {
         if (!dragEl) return;
-        updateIndicator(e.clientY);
-      }
+        // No visual feedback needed, just maintain drag state
+      }, 10);
 
       function onMouseUp(e) {
         if (!dragEl || !dragKey) return;
-        const dropInfo = updateIndicator(e.clientY);
-        if (dropInfo) {
-          const { target, insertBefore } = dropInfo;
-          const newOrder = state.order.filter(key => key !== dragKey);
-          const targetKey = target ? target.getAttribute('data-key') : null;
-          const targetIndex = targetKey ? newOrder.indexOf(targetKey) : newOrder.length;
-          newOrder.splice(insertBefore ? targetIndex : targetIndex + 1, 0, dragKey);
-          state.order = newOrder;
-          save();
-          console.log('New order after drop:', state.order);
-          renderList();
-        }
+        const dropPos = getDropPosition(e.clientY);
+        const newOrder = state.order.filter(key => key !== dragKey);
+        newOrder.splice(dropPos.index, 0, dragKey);
+        state.order = newOrder;
+        save();
+        console.log('New order after drop:', state.order);
+        renderList();
         cleanup();
       }
 
