@@ -53,7 +53,7 @@
       display: grid;
       grid-template-columns: repeat(12, 1fr);
       gap: 16px;
-      align-items: start; /* Allow cards to have different heights */
+      align-items: start;
     }
     @media (max-width: 900px) { .list { grid-template-columns: repeat(6, 1fr) } }
     @media (max-width: 640px) { .list { grid-template-columns: repeat(4, 1fr) } }
@@ -75,12 +75,12 @@
     .card.wide { grid-column: span 6 }
     @media (max-width: 640px) { .card, .card.wide { grid-column: span 4 } }
     .poster { width: 100%; aspect-ratio: 3 / 4.2; object-fit: cover; background: #0b1220 }
-    .content { padding: 12px 14px 16px; flex: 0 0 auto; } /* No forced height */
+    .content { padding: 12px 14px 16px; flex: 0 0 auto; }
     .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 6px 0 }
-    .description { /* New class for description */
+    .description {
       color: var(--muted);
       line-height: 1.5;
-      margin: 6px 0 0; /* Reduced margin */
+      margin: 6px 0 0;
       font-size: 14px;
     }
     .actions {
@@ -154,7 +154,20 @@
 
     /* DnD визуальные состояния */
     body.noselect { user-select: none }
-    .card.dragging { opacity: .6; cursor: grabbing; box-shadow: 0 16px 40px rgba(0,0,0,.55) }
+    .card.dragging {
+      opacity: 0.6;
+      cursor: grabbing;
+      box-shadow: 0 16px 40px rgba(0,0,0,.55);
+      transform: rotate(2deg); /* Slight rotation for dragging feedback */
+    }
+    .drop-indicator {
+      position: absolute;
+      height: 4px;
+      background: white;
+      z-index: 20;
+      transition: top 0.1s ease; /* Smooth indicator movement */
+      pointer-events: none; /* Prevent interference with mouse events */
+    }
 
     /* Fade-Out Animation for Deletion */
     .card.removing {
@@ -406,7 +419,6 @@
       const genres = (m.genres||[]).slice(0,3).map(g=>`<span class="pill">${esc(g.name)}</span>`).join('');
       const rating = (m.vote_average && m.vote_count>0) ? `⭐${Number(m.vote_average).toFixed(1)}` : '';
       const runtime = (m.runtime ? `${m.runtime} min` : (Array.isArray(m.episode_run_time) && m.episode_run_time[0]) ? `${m.episode_run_time[0]} min` : '');
-      // Conditionally include description only if m.overview exists and is non-empty
       const description = m.overview ? `<p class="description">${esc(m.overview)}</p>` : '';
       return `<article class="card" draggable="${allowedDevice}" data-key="${esc(key)}" aria-grabbed="false">
         <img class="poster" src="${esc(poster)}" alt="Poster for ${esc(title)}" loading="lazy" />
@@ -469,7 +481,6 @@
       const confirmHandler = () => {
         console.log('Confirming deletion for key:', key);
         if (card) {
-          // Capture positions before deletion
           const beforeMap = captureRects(el.list);
           card.classList.add('removing');
           setTimeout(() => {
@@ -477,7 +488,6 @@
             delete state.items[key];
             state.order = state.order.filter(x => x !== key);
             save();
-            // Delay renderList until repositioning animations complete
             setTimeout(() => {
               console.log('Calling renderList after fade and repositioning');
               renderList();
@@ -533,31 +543,6 @@
     }
 
     // ======= DRAG & DROP =======
-    let dragEl = null;
-
-    function setDragImage(e) {
-      const img = new Image();
-      img.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"></svg>';
-      e.dataTransfer?.setDragImage(img, 0, 0);
-    }
-
-    function getNearestCard(container, x, y) {
-      const cards = [...container.querySelectorAll('.card:not(.dragging)')];
-      if (!cards.length) return null;
-      let nearest = null;
-      let minDist = Infinity;
-      for (const c of cards) {
-        const r = c.getBoundingClientRect();
-        const cx = r.left + r.width/2;
-        const cy = r.top + r.height/2;
-        const dx = cx - x;
-        const dy = cy - y;
-        const dist = dx*dx + dy*dy;
-        if (dist < minDist) { minDist = dist; nearest = c; }
-      }
-      return nearest;
-    }
-
     function captureRects(container) {
       const map = new Map();
       container.querySelectorAll('.card').forEach((el, index) => {
@@ -618,43 +603,140 @@
       }, 1000 + (beforeMap.size * 100));
     }
 
-    function initDnD() {
+    function initCustomDnD() {
       if (!allowedDevice) return;
       const container = el.list;
+      let dragEl = null;
+      let dragClone = null;
+      let indicator = null;
+      let dragKey = null;
+      let startX = 0, startY = 0;
 
-      container.addEventListener('dragstart', (e) => {
+      function createIndicator() {
+        const el = document.createElement('div');
+        el.className = 'drop-indicator';
+        container.appendChild(el);
+        return el;
+      }
+
+      function updateIndicator(y) {
+        const cards = $$('.card:not(.dragging)', container);
+        let target = null;
+        let insertBefore = true;
+        for (const card of cards) {
+          const rect = card.getBoundingClientRect();
+          const midY = rect.top + rect.height / 2;
+          if (y < rect.top + 20) { // Near top of card
+            target = card;
+            insertBefore = true;
+            break;
+          } else if (y < rect.bottom - 20) { // Near bottom of card
+            target = card;
+            insertBefore = false;
+            break;
+          }
+        }
+        if (target) {
+          const rect = target.getBoundingClientRect();
+          indicator.style.width = `${rect.width}px`;
+          indicator.style.left = `${rect.left}px`;
+          indicator.style.top = insertBefore ? `${rect.top - 2}px` : `${rect.bottom + 2}px`;
+          indicator.style.display = 'block';
+          return { target, insertBefore };
+        } else if (cards.length) {
+          const lastCard = cards[cards.length - 1];
+          const rect = lastCard.getBoundingClientRect();
+          indicator.style.width = `${rect.width}px`;
+          indicator.style.left = `${rect.left}px`;
+          indicator.style.top = `${rect.bottom + 2}px`;
+          indicator.style.display = 'block';
+          return { target: null, insertBefore: false };
+        }
+        indicator.style.display = 'none';
+        return null;
+      }
+
+      function cleanup() {
+        if (dragEl) {
+          dragEl.classList.remove('dragging');
+          dragEl.setAttribute('aria-grabbed', 'false');
+        }
+        if (dragClone) dragClone.remove();
+        if (indicator) indicator.remove();
+        dragEl = null;
+        dragClone = null;
+        indicator = null;
+        dragKey = null;
+        document.body.classList.remove('noselect');
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+        container.removeEventListener('mouseleave', onMouseLeave);
+      }
+
+      function onMouseDown(e) {
+        if (e.button !== 0) return; // Only LMB
         const card = e.target.closest('.card');
-        if (!card) return;
+        if (!card || e.target.closest('.btn-ghost, button')) return; // Ignore buttons
+        e.preventDefault();
         dragEl = card;
+        dragKey = card.getAttribute('data-key');
         dragEl.classList.add('dragging');
         dragEl.setAttribute('aria-grabbed', 'true');
         document.body.classList.add('noselect');
-        setDragImage(e);
-      });
 
-      container.addEventListener('dragend', () => {
-        if (!dragEl) return;
-        dragEl.classList.remove('dragging');
-        dragEl.setAttribute('aria-grabbed', 'false');
-        dragEl = null;
-        document.body.classList.remove('noselect');
-        state.order = [...container.querySelectorAll('.card')].map(el => el.getAttribute('data-key'));
-        save();
-      });
+        // Create clone for visual feedback
+        dragClone = card.cloneNode(true);
+        dragClone.classList.add('dragging');
+        dragClone.style.position = 'absolute';
+        dragClone.style.zIndex = '30';
+        dragClone.style.pointerEvents = 'none';
+        const rect = card.getBoundingClientRect();
+        dragClone.style.width = `${rect.width}px`;
+        dragClone.style.height = `${rect.height}px`;
+        dragClone.style.left = `${rect.left}px`;
+        dragClone.style.top = `${rect.top}px`;
+        document.body.appendChild(dragClone);
 
-      container.addEventListener('dragover', (e) => {
-        if (!dragEl) return;
-        e.preventDefault();
-        const before = captureRects(container);
-        const nearest = getNearestCard(container, e.clientX, e.clientY);
-        if (nearest && nearest !== dragEl) {
-          container.insertBefore(dragEl, nearest);
-          animateFlip(container, before);
-        } else if (!nearest) {
-          container.appendChild(dragEl);
-          animateFlip(container, before);
+        startX = e.clientX;
+        startY = e.clientY;
+
+        indicator = createIndicator();
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+        container.addEventListener('mouseleave', onMouseLeave);
+      }
+
+      function onMouseMove(e) {
+        if (!dragEl || !dragClone) return;
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        dragClone.style.transform = `translate(${dx}px, ${dy}px) rotate(2deg)`;
+        updateIndicator(e.clientY);
+      }
+
+      function onMouseUp(e) {
+        if (!dragEl || !dragKey) return;
+        const beforeMap = captureRects(container);
+        const dropInfo = updateIndicator(e.clientY);
+        if (dropInfo) {
+          const { target, insertBefore } = dropInfo;
+          const newOrder = state.order.filter(key => key !== dragKey);
+          const targetKey = target ? target.getAttribute('data-key') : null;
+          const targetIndex = targetKey ? newOrder.indexOf(targetKey) : newOrder.length;
+          newOrder.splice(insertBefore ? targetIndex : targetIndex + 1, 0, dragKey);
+          state.order = newOrder;
+          save();
+          renderList();
+          animateFlip(container, beforeMap);
         }
-      });
+        cleanup();
+      }
+
+      function onMouseLeave() {
+        cleanup();
+      }
+
+      container.addEventListener('mousedown', onMouseDown);
     }
 
     // ======= BOOT =======
@@ -743,7 +825,7 @@
       subscribe();
 
       // Инициализация Drag&Drop
-      initDnD();
+      initCustomDnD();
     });
   </script>
 </body>
