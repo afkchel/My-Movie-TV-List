@@ -108,66 +108,23 @@
     body.noselect { user-select: none }
     .card.dragging { opacity: .6; cursor: grabbing; box-shadow: 0 16px 40px rgba(0,0,0,.55) }
 
-    /* Thanos Effect (CSS) */
+    /* Thanos Effect (JS-Driven) */
     .card.removing {
       position: relative;
       visibility: hidden; /* Сохраняем пространство карточки для анимации */
       pointer-events: none;
-      transition: visibility 0s linear 1.2s; /* Скрываем после анимации */
+      transition: visibility 0s linear 3.5s; /* Скрываем после анимации (3.5s как в Red Stapler) */
     }
     .card.removing .poster,
     .card.removing .content,
     .card.removing .actions {
       opacity: 0;
       transition: opacity 0.2s ease; /* Быстрое исчезновение содержимого */
-      filter: blur(2px); /* Лёгкое размытие для эффекта распада */
     }
-    .card.removing .thanos-particle::before,
-    .card.removing .thanos-particle::after {
-      content: '';
+    .dust {
       position: absolute;
-      width: var(--size, 8px);
-      height: var(--size, 8px);
-      background: #d1d5db; /* Серый цвет для "пыли" */
-      border-radius: 50%;
-      z-index: 1000;
-      animation: thanos-particle 1.2s ease-out forwards;
+      z-index: 1000; /* Обеспечиваем видимость поверх других элементов */
     }
-    @keyframes thanos-particle {
-      0% { transform: translate(0, 0); opacity: 0.8; scale: 1; }
-      100% { transform: translate(var(--x, 50px), var(--y, -50px)) rotate(var(--rotate, 0deg)); opacity: 0; scale: 0.3; }
-    }
-    /* Позиции и траектории для 30 частиц (15 элементов thanos-particle) */
-    .card.removing .thanos-particle-1::before { top: 5%; left: 5%; --size: 6px; animation-delay: 0.1s; --x: -80px; --y: -60px; --rotate: 20deg; }
-    .card.removing .thanos-particle-1::after { top: 10%; left: 10%; --size: 7px; animation-delay: 0.15s; --x: 70px; --y: -50px; --rotate: -15deg; }
-    .card.removing .thanos-particle-2::before { top: 15%; left: 20%; --size: 8px; animation-delay: 0.2s; --x: -60px; --y: 50px; --rotate: 10deg; }
-    .card.removing .thanos-particle-2::after { top: 20%; left: 30%; --size: 5px; animation-delay: 0.25s; --x: 50px; --y: -70px; --rotate: -20deg; }
-    .card.removing .thanos-particle-3::before { top: 25%; left: 40%; --size: 9px; animation-delay: 0.3s; --x: -70px; --y: 40px; --rotate: 15deg; }
-    .card.removing .thanos-particle-3::after { top: 30%; left: 50%; --size: 6px; animation-delay: 0.35s; --x: 60px; --y: -60px; --rotate: -10deg; }
-    .card.removing .thanos-particle-4::before { top: 35%; left: 60%; --size: 7px; animation-delay: 0.2s; --x: -50px; --y: 60px; --rotate: 25deg; }
-    .card.removing .thanos-particle-4::after { top: 40%; left: 70%; --size: 8px; animation-delay: 0.25s; --x: 80px; --y: -40px; --rotate: -15deg; }
-    .card.removing .thanos-particle-5::before { top: 45%; left: 80%; --size: 6px; animation-delay: 0.3s; --x: -60px; --y: 50px; --rotate: 20deg; }
-    .card.removing .thanos-particle-5::after { top: 50%; left: 90%; --size: 5px; animation-delay: 0.35s; --x: 70px; --y: -50px; --rotate: -10deg; }
-    .card.removing .thanos-particle-6::before { top: 55%; left: 10%; --size: 8px; animation-delay: 0.15s; --x: -80px; --y: 60px; --rotate: 15deg; }
-    .card.removing .thanos-particle-6::after { top: 60%; left: 20%; --size: 7px; animation-delay: 0.2s; --x: 50px; --y: -70px; --rotate: -20deg; }
-    .card.removing .thanos-particle-7::before { top: 65%; left: 30%; --size: 6px; animation-delay: 0.25s; --x: -70px; --y: 40px; --rotate: 10deg; }
-    .card.removing .thanos-particle-7::after { top: 70%; left: 40%; --size: 9px; animation-delay: 0.3s; --x: 60px; --y: -60px; --rotate: -15deg; }
-    .card.removing .thanos-particle-8::before { top: 75%; left: 50%; --size: 5px; animation-delay: 0.35s; --x: -50px; --y: 50px; --rotate: 20deg; }
-    .card.removing .thanos-particle-8::after { top: 80%; left: 60%; --size: 8px; animation-delay: 0.2s; --x: 80px; --y: -40px; --rotate: -10deg; }
-    .card.removing .thanos-particle-9::before { top: 85%; left: 70%; --size: 7px; animation-delay: 0.25s; --x: -60px; --y: 60px; --rotate: 15deg; }
-    .card.removing .thanos-particle-9::after { top: 90%; left: 80%; --size: 6px; animation-delay: 0.3s; --x: 70px; --y: -50px; --rotate: -20deg; }
-    .card.removing .thanos-particle-10::before { top: 95%; left: 90%; --size: 5px; animation-delay: 0.35s; --x: -80px; --y: 40px; --rotate: 10deg; }
-    .card.removing .thanos-particle-10::after { top: 10%; left: 15%; --size: 8px; animation-delay: 0.2s; --x: 50px; --y: -70px; --rotate: -15deg; }
-    .card.removing .thanos-particle-11::before { top: 20%; left: 25%; --size: 6px; animation-delay: 0.25s; --x: -70px; --y: 50px; --rotate: 20deg; }
-    .card.removing .thanos-particle-11::after { top: 30%; left: 35%; --size: 7px; animation-delay: 0.3s; --x: 60px; --y: -60px; --rotate: -10deg; }
-    .card.removing .thanos-particle-12::before { top: 40%; left: 45%; --size: 8px; animation-delay: 0.35s; --x: -50px; --y: 40px; --rotate: 15deg; }
-    .card.removing .thanos-particle-12::after { top: 50%; left: 55%; --size: 5px; animation-delay: 0.2s; --x: 80px; --y: -50px; --rotate: -20deg; }
-    .card.removing .thanos-particle-13::before { top: 60%; left: 65%; --size: 9px; animation-delay: 0.25s; --x: -60px; --y: 60px; --rotate: 10deg; }
-    .card.removing .thanos-particle-13::after { top: 70%; left: 75%; --size: 6px; animation-delay: 0.3s; --x: 70px; --y: -40px; --rotate: -15deg; }
-    .card.removing .thanos-particle-14::before { top: 80%; left: 85%; --size: 7px; animation-delay: 0.35s; --x: -80px; --y: 50px; --rotate: 20deg; }
-    .card.removing .thanos-particle-14::after { top: 90%; left: 95%; --size: 8px; animation-delay: 0.2s; --x: 50px; --y: -70px; --rotate: -10deg; }
-    .card.removing .thanos-particle-15::before { top: 15%; left: 50%; --size: 6px; animation-delay: 0.25s; --x: -70px; --y: 40px; --rotate: 15deg; }
-    .card.removing .thanos-particle-15::after { top: 25%; left: 60%; --size: 5px; animation-delay: 0.3s; --x: 60px; --y: -60px; --rotate: -20deg; }
   </style>
 </head>
 <body>
@@ -225,6 +182,11 @@
       </div>
     </div>
   </div>
+
+  <!-- External Dependencies for Thanos Effect -->
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-easing/1.4.1/jquery.easing.min.js"></script>
 
   <script type="module">
     'use strict'
@@ -373,7 +335,71 @@
       }, (error) => console.error('Ошибка загрузки:', error));
     }
 
-    // ======= PARTICLES ANIMATION (CSS Thanos Effect) =======
+    // ======= PARTICLES ANIMATION (JS Thanos Effect) =======
+    const canvasCount = 35;
+    const imageDataArray = [];
+
+    function weightedRandomDistrib(peak) {
+      const prob = [];
+      const seq = [];
+      for (let i = 0; i < canvasCount; i++) {
+        prob.push(Math.pow(canvasCount - Math.abs(peak - i), 3));
+        seq.push(i);
+      }
+      const total = prob.reduce((a, b) => a + b, 0);
+      let rand = Math.random() * total;
+      for (let i = 0; i < prob.length; i++) {
+        rand -= prob[i];
+        if (rand <= 0) return seq[i];
+      }
+      return seq[seq.length - 1];
+    }
+
+    function animateBlur(elem, radius, duration) {
+      $({ rad: 0 }).animate({ rad: radius }, {
+        duration: duration,
+        easing: "easeOutQuad",
+        step: function(now) {
+          elem.css({ filter: 'blur(' + now + 'px)' });
+        }
+      });
+    }
+
+    function animateTransform(elem, sx, sy, angle, duration) {
+      let tx = 0, ty = 0, td = 0;
+      $({ x: 0, y: 0, deg: 0 }).animate({ x: sx, y: sy, deg: angle }, {
+        duration: duration,
+        easing: "easeInQuad",
+        step: function(now, fx) {
+          if (fx.prop === "x") tx = now;
+          else if (fx.prop === "y") ty = now;
+          else if (fx.prop === "deg") td = now;
+          elem.css({
+            transform: 'rotate(' + td + 'deg) translate(' + tx + 'px,' + ty + 'px)'
+          });
+        }
+      });
+    }
+
+    function createBlankImageData(imageData) {
+      for (let i = 0; i < canvasCount; i++) {
+        let arr = new Uint8ClampedArray(imageData.data.length);
+        for (let j = 0; j < arr.length; j++) {
+          arr[j] = 0;
+        }
+        imageDataArray.push(arr);
+      }
+    }
+
+    function newCanvasFromImageData(imageDataArray, w, h) {
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const tempCtx = canvas.getContext('2d');
+      tempCtx.putImageData(new ImageData(imageDataArray, w, h), 0, 0);
+      return canvas;
+    }
+
     function initParticles(card, callback) {
       if (!card) {
         console.error('Card element not found for Thanos effect');
@@ -382,22 +408,60 @@
       }
       console.log('Starting Thanos effect for card:', card.getAttribute('data-key'));
 
-      // Add wrapper elements for pseudo-elements
-      for (let i = 1; i <= 15; i++) {
-        const particle = document.createElement('div');
-        particle.className = `thanos-particle-${i}`;
-        card.appendChild(particle);
-      }
+      // Capture card as image using html2canvas
+      html2canvas(card, { backgroundColor: null }).then(canvas => {
+        const ctx = canvas.getContext('2d');
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const pixelArr = imageData.data;
 
-      setTimeout(() => {
-        console.log('Thanos effect completed');
-        // Remove wrapper elements
-        for (let i = 1; i <= 15; i++) {
-          const particle = card.querySelector(`.thanos-particle-${i}`);
-          if (particle) particle.remove();
+        // Clear previous imageDataArray
+        imageDataArray.length = 0;
+        createBlankImageData(imageData);
+
+        // Distribute pixel data
+        for (let i = 0; i < pixelArr.length; i += 4) {
+          let p = Math.floor((i / pixelArr.length) * canvasCount);
+          let a = imageDataArray[weightedRandomDistrib(p)];
+          a[i] = pixelArr[i];
+          a[i + 1] = pixelArr[i + 1];
+          a[i + 2] = pixelArr[i + 2];
+          a[i + 3] = pixelArr[i + 3];
         }
-        callback();
-      }, 1200); // Animation duration: 1.2 seconds
+
+        // Create and append canvases
+        const cardRect = card.getBoundingClientRect();
+        for (let i = 0; i < canvasCount; i++) {
+          let c = newCanvasFromImageData(imageDataArray[i], canvas.width, canvas.height);
+          c.classList.add('dust');
+          c.style.position = 'absolute';
+          c.style.left = `${cardRect.left}px`;
+          c.style.top = `${cardRect.top}px`;
+          document.body.appendChild(c);
+        }
+
+        // Fade out card content
+        $(card).children().not('.dust').fadeOut(3500);
+
+        // Animate canvases
+        $('.dust').each(function(index) {
+          animateBlur($(this), 0.8, 800);
+          setTimeout(() => {
+            animateTransform($(this), 100, -100, Math.floor(Math.random() * 30 - 15), 800 + (110 * index));
+          }, 70 * index);
+          $(this).delay(70 * index).fadeOut((110 * index) + 800, "easeInQuint", () => {
+            $(this).remove();
+          });
+        });
+
+        // Call callback after animation
+        setTimeout(() => {
+          console.log('Thanos effect completed');
+          callback();
+        }, 3500); // Match Red Stapler duration
+      }).catch(err => {
+        console.error('html2canvas error:', err);
+        callback(); // Fallback to ensure deletion proceeds
+      });
     }
 
     // ======= SUGGESTIONS UI =======
