@@ -60,6 +60,7 @@
       box-shadow: var(--shadow); display:flex; flex-direction: column;
       transition: transform .18s ease, box-shadow .18s ease;
       will-change: transform;
+      position: relative;
     }
     .sortable .card { cursor: grab }
     .card.wide { grid-column: span 6 }
@@ -106,6 +107,28 @@
     /* DnD визуальные состояния */
     body.noselect { user-select: none }
     .card.dragging { opacity: .6; cursor: grabbing; box-shadow: 0 16px 40px rgba(0,0,0,.55) }
+
+    /* Particle Effect */
+    .particle {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      background: var(--card);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 10;
+    }
+    .particle-text {
+      position: absolute;
+      font-size: 14px;
+      color: var(--text);
+      pointer-events: none;
+      z-index: 10;
+    }
+    .card.deleting {
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
   </style>
 </head>
 <body>
@@ -114,7 +137,7 @@
       <div class="title">
         <div style="font-size:26px">🎬</div>
         <div>
-          <h1>Список шедевров</h1>
+          <h3>Список шедевров</h3>
           <p class="subtitle">Добро пожаловать на список не проходняков, составленный Леонидом</p>
         </div>
       </div>
@@ -168,7 +191,7 @@
     'use strict'
     // ======= CONFIG =======
     const TMDB_API_KEY = "166bdfecdc09d46826d8662b9627ad27";
-    const TMDB_IMG_BASE = "https://image.tmdb.org/t/p/";
+    const TMDB_IMG_BASE = "https://image.tmdb.org/3/p/";
     const LANGUAGE = "ru";
     const YOUTUBE_API_KEY = "AIzaSyCUHWrkVFi1UO1y8NKSkWtrT_W1aZpdBDM";
     const SEARCH_DELAY_MS = 350;
@@ -334,6 +357,82 @@
       el.suggestions.classList.remove('open');
       el.searchbar.setAttribute('aria-expanded', 'false');
       state.selectedIndex = -1; state.suggestions = [];
+    }
+
+    // ======= PARTICLE EFFECT =======
+    function createParticleEffect(card) {
+      const rect = card.getBoundingClientRect();
+      const particles = [];
+      const particleCount = 50;
+      const textElements = card.querySelectorAll('.content h3, .content p, .pill, .actions a, .actions button');
+      const textNodes = [];
+
+      // Create particles for the card background
+      for (let i = 0; i < particleCount; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle救助
+        particle.style.left = `${rect.left + Math.random() * rect.width}px`;
+        particle.style.top = `${rect.top + Math.random() * rect.height}px`;
+        document.body.appendChild(particle);
+        particles.push(particle);
+
+        const angle = Math.random() * Math.PI * 2;
+        const velocity = 2 + Math.random() * 3;
+        const vx = Math.cos(angle) * velocity;
+        const vy = Math.sin(angle) * velocity;
+
+        particle.animate([
+          { transform: 'translate(0, 0)', opacity: 1 },
+          { transform: `translate(${vx * 100}px, ${vy * 100}px)`, opacity: 0 }
+        ], {
+          duration: 1000,
+          easing: 'ease-out',
+          fill: 'forwards'
+        });
+
+        setTimeout(() => particle.remove(), 1000);
+      }
+
+      // Create particles for text elements
+      textElements.forEach((el) => {
+        const textRect = el.getBoundingClientRect();
+        const text = el.textContent;
+        for (let i = 0; i < text.length; i++) {
+          const char = document.createElement('span');
+          char.className = 'particle-text';
+          char.textContent = text[i];
+          char.style.left = `${textRect.left + (i / text.length) * textRect.width}px`;
+          char.style.top = `${textRect.top + Math.random() * textRect.height}px`;
+          document.body.appendChild(char);
+          textNodes.push(char);
+
+          const angle = Math.random() * Math.PI * 2;
+          const velocity = 1 + Math.random() * 2;
+          const vx = Math.cos(angle) * velocity;
+          const vy = Math.sin(angle) * velocity;
+
+          char.animate([
+            { transform: 'translate(0, 0)', opacity: 1 },
+            { transform: `translate(${vx * 80}px, ${vy * 80}px)`, opacity: 0 }
+          ], {
+            duration: 800,
+            easing: 'ease-out',
+            fill: 'forwards'
+          });
+
+          setTimeout(() => char.remove(), 800);
+        }
+      });
+
+      // Hide the card during animation
+      card.classList.add('deleting');
+
+      // Remove card and particles after animation
+      setTimeout(() => {
+        card.remove();
+        particles.forEach(p => p.remove());
+        textNodes.forEach(t => t.remove());
+      }, 1000);
     }
 
     // ======= RENDER LIST =======
@@ -528,6 +627,7 @@
           if (nearest !== dragEl) {
             container.insertBefore(dragEl, nearest);
             animateFlip(container, before);
+ Provinces
           }
         } else {
           // Если карточек нет или не нашли — кидаем в конец
@@ -586,7 +686,13 @@
             delete state.items[key];
             state.order = state.order.filter(x => x !== key);
             save();
-            renderList();
+            const card = el.list.querySelector(`[data-key="${key}"]`);
+            if (card) {
+              createParticleEffect(card);
+              setTimeout(() => {
+                renderList();
+              }, 1000); // Wait for animation to complete
+            }
           });
           return;
         }
