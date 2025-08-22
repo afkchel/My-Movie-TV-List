@@ -33,7 +33,7 @@
       min-height: 100dvh;
     }
     header { background: color-mix(in lab, var(--bg) 70%, transparent); border-bottom: 1px solid #1f2937 }
-    .container { max-width: 980px; margin: 0 auto; paddy: 16px }
+    .container { max-width: 980px; margin: 0 auto; padding: 16px }
     .title { display: flex; gap: 12px; align-items: center }
     .title h1 { margin: 0; font-weight: 800; letter-spacing: .2px; font-size: clamp(22px, 5vw, 30px) }
     .subtitle { margin: 6px 0 0; color: var(--muted); font-size: 14px }
@@ -109,8 +109,13 @@
     .card.dragging { opacity: .6; cursor: grabbing; box-shadow: 0 16px 40px rgba(0,0,0,.55) }
 
     /* Анимация частиц */
-    .card.removing { opacity: 0; pointer-events: none }
-    .particles-container { position: absolute; z-index: 10; pointer-events: none }
+    .card.removing { opacity: 0; pointer-events: none; transition: opacity 0.2s ease }
+    .particles-container {
+      position: absolute;
+      z-index: 1000; /* Высокий z-index для видимости */
+      pointer-events: none;
+      background: rgba(0, 0, 0, 0.2); /* Отладочный фон для проверки видимости */
+    }
   </style>
 </head>
 <body>
@@ -245,7 +250,7 @@
 
     // ======= API HELPERS =======
     function apiUrl(path, params = {}) {
-      const base = new URL(' https://api.themoviedb.org/3' + path);
+      const base = new URL('https://api.themoviedb.org/3' + path);
       const sp = new URLSearchParams({ api_key: TMDB_API_KEY, language: LANGUAGE, ...params });
       base.search = sp.toString();
       return base.toString();
@@ -321,48 +326,47 @@
     function initParticles(card, callback) {
       if (!card) {
         console.error('Card element not found for particles animation');
-        callback(); // Выполняем callback, чтобы продолжить удаление
+        callback();
         return;
       }
 
       const rect = card.getBoundingClientRect();
       const canvas = document.createElement('canvas');
+      const canvasId = `particles-${Math.random().toString(36).slice(2)}`;
+      canvas.id = canvasId;
       canvas.className = 'particles-container';
-      canvas.id = `particles-${Math.random().toString(36).slice(2)}`; // Уникальный ID
       canvas.style.position = 'absolute';
       canvas.style.top = `${rect.top + window.scrollY}px`;
       canvas.style.left = `${rect.left + window.scrollX}px`;
       canvas.width = rect.width;
       canvas.height = rect.height;
-      card.parentNode.appendChild(canvas);
+      document.body.appendChild(canvas); // Добавляем в body для надёжного позиционирования
 
-      console.log('Initializing particles for card:', card.getAttribute('data-key'));
+      console.log('Creating particles canvas:', canvasId, 'at', rect);
 
-      // Проверяем, доступна ли библиотека particlesJS
       if (typeof particlesJS === 'undefined') {
         console.error('particlesJS not loaded');
-        card.parentNode.removeChild(canvas);
+        canvas.remove();
         callback();
         return;
       }
 
-      particlesJS(canvas.id, {
+      particlesJS(canvasId, {
         particles: {
-          number: { value: 80, density: { enable: true, value_area: 800 } },
+          number: { value: 100, density: { enable: true, value_area: 800 } },
           color: { value: '#ffffff' },
-          shape: { type: 'circle', stroke: { width: 0, color: '#000000' } },
-          opacity: { value: 0.5, random: true, anim: { enable: true, speed: 1, opacity_min: 0, sync: false } },
-          size: { value: 3, random: true, anim: { enable: false } },
+          shape: { type: 'circle' },
+          opacity: { value: 0.8, random: true, anim: { enable: true, speed: 2, opacity_min: 0, sync: false } },
+          size: { value: 5, random: true },
           line_linked: { enable: false },
           move: {
             enable: true,
-            speed: 6,
+            speed: 8,
             direction: 'none',
             random: true,
             straight: false,
             out_mode: 'out',
-            bounce: false,
-            attract: { enable: false }
+            bounce: false
           }
         },
         interactivity: { detect_on: 'canvas', events: { onhover: { enable: false }, onclick: { enable: false } } },
@@ -370,10 +374,10 @@
       });
 
       setTimeout(() => {
-        console.log('Removing particles canvas:', canvas.id);
+        console.log('Removing particles canvas:', canvasId);
         canvas.remove();
         callback();
-      }, 1000); // Анимация длится 1 секунду
+      }, 1200); // Увеличил до 1.2 сек для более заметной анимации
     }
 
     // ======= SUGGESTIONS UI =======
@@ -479,7 +483,6 @@
           });
         } else {
           console.error('Card not found for key:', key);
-          // Удаляем без анимации, чтобы не нарушить логику
           delete state.items[key];
           state.order = state.order.filter(x => x !== key);
           save();
@@ -610,7 +613,6 @@
             container.insertBefore(dragEl, nearest);
             animateFlip(container, before);
           }
-       usize: 0
         } else {
           container.appendChild(dragEl);
           animateFlip(container, before);
@@ -620,6 +622,9 @@
 
     // ======= BOOT =======
     document.addEventListener('DOMContentLoaded', () => {
+      // Проверяем загрузку particles.js
+      console.log('Checking particlesJS:', typeof particlesJS);
+
       if (!allowedDevice) {
         el.searchbar.style.display = 'none';
       } else {
