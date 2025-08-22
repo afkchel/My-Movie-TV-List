@@ -58,7 +58,7 @@
       background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0)), var(--card);
       border: 1px solid #1f2937; border-radius: var(--radius); overflow: hidden;
       box-shadow: var(--shadow); display: flex; flex-direction: column;
-      transition: opacity 0.5s ease, transform 0.5s ease-in-out; /* Smoother easing for floating effect */
+      transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.4, 0, 0.2, 1); /* Longer duration, custom easing */
       will-change: opacity, transform;
       position: relative;
     }
@@ -421,9 +421,9 @@
             state.order = state.order.filter(x => x !== key);
             save();
             renderList();
-            // Animate remaining cards with floating effect
+            // Animate remaining cards with fluid effect
             animateFlip(el.list, beforeMap);
-          }, 500); // Match CSS transition duration (0.5s)
+          }, 500); // Match fade-out duration (0.5s)
         } else {
           console.error('Card not found for key:', key);
           delete state.items[key];
@@ -507,6 +507,7 @@
     }
 
     function animateFlip(container, beforeMap) {
+      console.log('Starting animateFlip with beforeMap:', beforeMap);
       const afterMap = new Map();
       container.querySelectorAll('.card').forEach((el, index) => {
         afterMap.set(el, { rect: el.getBoundingClientRect(), index });
@@ -516,16 +517,23 @@
         if (!after) return;
         const dx = before.rect.left - after.rect.left;
         const dy = before.rect.top - after.rect.top;
-        if (dx || dy) {
+        if (dx !== 0 || dy !== 0) {
+          console.log(`Animating card ${before.index}: dx=${dx}, dy=${dy}, delay=${before.index * 80}ms`);
           el.style.transition = 'none'; // Disable transition for initial positioning
-          el.style.transform = `translate(${dx}px, ${dy}px) scale(1.02)`; // Slight scale for floating effect
+          el.style.transform = `translate(${dx}px, ${dy}px) scale(1.03)`; // Slight scale for fluid effect
+          el.style.opacity = '0.9'; // Subtle fade for visual polish
           el.getBoundingClientRect(); // Force reflow
           requestAnimationFrame(() => {
-            el.style.transition = `transform 0.5s ease-in-out ${before.index * 50}ms`; // Stagger by 50ms
-            el.style.transform = ''; // Reset to natural grid position
+            el.style.transition = `transform 0.7s cubic-bezier(0.4, 0, 0.2, 1) ${before.index * 80}ms, opacity 0.7s ease ${before.index * 80}ms`; // Staggered, fluid transition
+            el.style.transform = ''; // Reset to grid position
+            el.style.opacity = '1';
           });
         }
       });
+      // Ensure animations complete before any further DOM updates
+      setTimeout(() => {
+        console.log('Animations completed');
+      }, 700 + (beforeMap.size * 80)); // Match duration + max stagger
     }
 
     function initDnD() {
@@ -557,12 +565,10 @@
         e.preventDefault();
         const before = captureRects(container);
         const nearest = getNearestCard(container, e.clientX, e.clientY);
-        if (nearest) {
-          if (nearest !== dragEl) {
-            container.insertBefore(dragEl, nearest);
-            animateFlip(container, before);
-          }
-        } else {
+        if (nearest && nearest !== dragEl) {
+          container.insertBefore(dragEl, nearest);
+          animateFlip(container, before);
+        } else if (!nearest) {
           container.appendChild(dragEl);
           animateFlip(container, before);
         }
