@@ -6,117 +6,198 @@
   <title>Список шедевров (TMDb)</title>
   <meta name="description" content="Добро пожаловать на список не проходняков, составленный Леонидом" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'><text y='1em' font-size='96'>🎬</text></svg>">
-  <style>
-    :root {
-      --bg: #0b0c0f;
-      --panel: #12141a;
-      --text: #e6e8f0;
-      --muted: #9aa3b2;
-      --accent: #6ee7b7;
-      --accent-2: #93c5fd;
-      --danger: #fca5a5;
-      --ring: #334155;
-      --card: #0f172a;
-      --shadow: 0 10px 30px rgba(0,0,0,.35);
-      --radius: 16px;
-    }
-    * { box-sizing: border-box }
-    html, body { height: 100% }
-    body {
-      margin: 0;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
-      background: radial-gradient(1000px 600px at 10% -10%, rgba(147,197,253,.15), transparent), radial-gradient(800px 500px at 110% 10%, rgba(110,231,183,.12), transparent), var(--bg);
-      background-attachment: fixed;
-      color: var(--text);
-      display: grid;
-      grid-template-rows: auto 1fr auto;
-      min-height: 100dvh;
-    }
-    header { background: color-mix(in lab, var(--bg) 70%, transparent); border-bottom: 1px solid #1f2937 }
-    .container { max-width: 980px; margin: 0 auto; padding: 16px }
-    .title { display: flex; gap: 12px; align-items: center }
-    .title h1 { margin: 0; font-weight: 800; letter-spacing: .2px; font-size: clamp(22px, 5vw, 30px) }
-    .subtitle { margin: 6px 0 0; color: var(--muted); font-size: 14px }
-    .searchbar { position: relative; margin-top: 14px }
-    .searchbar input[type="text"] { width: 100%; padding: 14px 48px 14px 16px; border-radius: 14px; background: var(--panel); color: var(--text); border: 1px solid #1f2937; outline: none; font-size: 16px; box-shadow: inset 0 1px 0 rgba(255,255,255,.02), var(--shadow) }
-    .searchbar input:focus { border-color: var(--accent-2); box-shadow: 0 0 0 4px rgba(147,197,253,.12), var(--shadow) }
-    .searchbar .kbd { position:absolute; right:10px; top:50%; transform: translateY(-50%); font: 12px/1 monospace; color: var(--muted); opacity:.9 }
-    .suggestions { position: absolute; inset: auto 0 0 0; transform: translateY(100%); background: var(--panel); border: 1px solid #1f2937; border-radius: 12px; margin-top: 8px; max-height: 60dvh; overflow: auto; box-shadow: var(--shadow); display: none; z-index: 100 }
-    .suggestions.open { display: block }
-    .suggestion { display: grid; grid-template-columns: 46px 1fr auto; gap: 12px; align-items: center; padding: 10px 12px; cursor: pointer }
-    .suggestion:hover, .suggestion[aria-selected="true"] { background: #0b1220 }
-    .suggestion img { width: 46px; height: 68px; object-fit: cover; border-radius: 8px; background: #0b1220 }
-    .suggestion .meta { display:flex; flex-direction:column; gap:4px }
-    .pill { font-size: 12px; color: var(--muted); padding: 2px 8px; border: 1px solid #374151; border-radius: 999px }
-    main .container { padding-top: 10px }
-    .list { display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px }
-    @media (max-width: 900px) { .list { grid-template-columns: repeat(6, 1fr) } }
-    @media (max-width: 640px) { .list { grid-template-columns: repeat(4, 1fr) } }
+ <style>
+  :root {
+    --bg: #0b0c0f;
+    --panel: #12141a;
+    --text: #e6e8f0;
+    --muted: #9aa3b2;
+    --accent: #6ee7b7;
+    --accent-2: #93c5fd;
+    --danger: #fca5a5;
+    --ring: #334155;
+    --card: #0f172a;
+    --shadow: 0 10px 30px rgba(0,0,0,.35);
+    --radius: 16px;
+  }
+  * { box-sizing: border-box }
+  html, body { height: 100% }
+  body {
+    margin: 0;
+    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+    background: radial-gradient(1000px 600px at 10% -10%, rgba(147,197,253,.15), transparent), radial-gradient(800px 500px at 110% 10%, rgba(110,231,183,.12), transparent), var(--bg);
+    background-attachment: fixed;
+    color: var(--text);
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    min-height: 100dvh;
+  }
+  header { background: color-mix(in lab, var(--bg) 70%, transparent); border-bottom: 1px solid #1f2937 }
+  .container { max-width: 980px; margin: 0 auto; padding: 16px }
+  .title { display: flex; gap: 12px; align-items: center }
+  .title h1 { margin: 0; font-weight: 800; letter-spacing: .2px; font-size: clamp(22px, 5vw, 30px) }
+  .subtitle { margin: 6px 0 0; color: var(--muted); font-size: 14px }
+  .searchbar { position: relative; margin-top: 14px }
+  .searchbar input[type="text"] { width: 100%; padding: 14px 48px 14px 16px; border-radius: 14px; background: var(--panel); color: var(--text); border: 1px solid #1f2937; outline: none; font-size: 16px; box-shadow: inset 0 1px 0 rgba(255,255,255,.02), var(--shadow) }
+  .searchbar input:focus { border-color: var(--accent-2); box-shadow: 0 0 0 4px rgba(147,197,253,.12), var(--shadow) }
+  .searchbar .kbd { position:absolute; right:10px; top:50%; transform: translateY(-50%); font: 12px/1 monospace; color: var(--muted); opacity:.9 }
+  .suggestions { position: absolute; inset: auto 0 0 0; transform: translateY(100%); background: var(--panel); border: 1px solid #1f2937; border-radius: 12px; margin-top: 8px; max-height: 60dvh; overflow: auto; box-shadow: var(--shadow); display: none; z-index: 100 }
+  .suggestions.open { display: block }
+  .suggestion { display: grid; grid-template-columns: 46px 1fr auto; gap: 12px; align-items: center; padding: 10px 12px; cursor: pointer }
+  .suggestion:hover, .suggestion[aria-selected="true"] { background: #0b1220 }
+  .suggestion img { width: 46px; height: 68px; object-fit: cover; border-radius: 8px; background: #0b1220 }
+  .suggestion .meta { display:flex; flex-direction:column; gap:4px }
+  .pill { font-size: 12px; color: var(--muted); padding: 2px 8px; border: 1px solid #374151; border-radius: 999px }
+  main .container { padding-top: 10px }
+  .list { display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px }
+  @media (max-width: 900px) { .list { grid-template-columns: repeat(6, 1fr) } }
+  @media (max-width: 640px) { .list { grid-template-columns: repeat(4, 1fr) } }
 
-    .card {
-      grid-column: span 4;
-      background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0)) , var(--card);
-      border: 1px solid #1f2937; border-radius: var(--radius); overflow: hidden;
-      box-shadow: var(--shadow); display:flex; flex-direction: column;
-      transition: transform .18s ease, box-shadow .18s ease;
-      will-change: transform;
-      position: relative;
-    }
-    .sortable .card { cursor: grab }
-    .card.wide { grid-column: span 6 }
-    @media (max-width: 640px) { .card, .card.wide { grid-column: span 4 } }
-    .poster { width: 100%; aspect-ratio: 3 / 4.2; object-fit: cover; background:#0b1220 }
-    .content { padding: 12px 14px 16px }
-    .row { display:flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 6px 0 }
-    .actions { margin-top: auto; display:flex; justify-content: space-between; align-items: center; gap: 8px; padding: 12px 14px; border-top:1px solid #1f2937; background: #0c111b; flex-wrap: wrap }
-    button, .btn { appearance: none; border: 1px solid #2b3443; background: #111827; color: var(--text); padding: 10px 14px; border-radius: 12px; cursor: pointer; font-weight: 600; box-shadow: var(--shadow) }
-    button:hover { background: #0f172a; border-color:#3b475a }
-    .btn-ghost {
-      background: transparent; border: 1px solid #374151; display: inline-flex; align-items:center; justify-content:center;
-      vertical-align: middle; text-align: center; line-height: 1.5; padding: 10px 14px; border-radius: 12px; color: var(--text);
-      text-decoration: none; font-weight: 600; box-sizing: border-box; min-width: 80px; font-size: 16px
-    }
-    .btn-ghost:hover { background: #0f172a; border-color: #3b475a }
-    .btn-danger { border-color: #7f1d1d; background: #1f0f12 }
-    .btn-danger:hover { background: #2b0f12; border-color:#991b1b }
-    footer { color: var(--muted); font-size: 12px; border-top: 1px solid #1f2937 }
-    a { color: var(--accent-2); text-decoration: none }
-    a:hover { text-decoration: underline }
+  .card {
+    grid-column: span 4;
+    background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0)) , var(--card);
+    border: 1px solid #1f2937; border-radius: var(--radius); overflow: hidden;
+    box-shadow: var(--shadow); display:flex; flex-direction: column;
+    transition: transform .18s ease, box-shadow .18s ease;
+    will-change: transform;
+    position: relative;
+  }
+  .sortable .card { cursor: grab }
+  .card.wide { grid-column: span 6 }
+  @media (max-width: 640px) { .card, .card.wide { grid-column: span 4 } }
+  .poster { width: 100%; aspect-ratio: 3 / 4.2; object-fit: cover; background:#0b1220 }
+  .content { padding: 12px 14px 16px }
+  .row { display:flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 6px 0 }
+  .actions { margin-top: auto; display:flex; justify-content: space-between; align-items: center; gap: 8px; padding: 12px 14px; border-top:1px solid #1f2937; background: #0c111b; flex-wrap: wrap }
+  button, .btn { appearance: none; border: 1px solid #2b3443; background: #111827; color: var(--text); padding: 10px 14px; border-radius: 12px; cursor: pointer; font-weight: 600; box-shadow: var(--shadow) }
+  button:hover { background: #0f172a; border-color:#3b475a }
+  .btn-ghost {
+    background: transparent; border: 1px solid #374151; display: inline-flex; align-items:center; justify-content:center;
+    vertical-align: middle; text-align: center; line-height: 1.5; padding: 10px 14px; border-radius: 12px; color: var(--text);
+    text-decoration: none; font-weight: 600; box-sizing: border-box; min-width: 80px; font-size: 16px
+  }
+  .btn-ghost:hover { background: #0f172a; border-color: #3b475a }
+  .btn-danger { border-color: #7f1d1d; background: #1f0f12 }
+  .btn-danger:hover { background: #2b0f12; border-color:#991b1b }
+  footer { color: var(--muted); font-size: 12px; border-top: 1px solid #1f2937 }
+  a { color: var(--accent-2); text-decoration: none }
+  a:hover { text-decoration: underline }
 
-    /* Модалки */
-    .modal { position: fixed; inset:0; background: rgba(0, 0, 0, 0.5); display: none; justify-content: center; align-items: center; z-index: 100 }
-    .modal-content { background: var(--card); padding: 10px 20px 20px; border-radius: var(--radius); border: 1px solid #1f2937; box-shadow: var(--shadow); width: 90%; max-width: 400px; text-align: center }
-    .modal-content p { margin: 0 0 15px; color: var(--muted); font-size: 16px }
-    .modal-actions, .edit-actions { display: flex; justify-content: center; gap: 10px }
-    @media (max-width: 640px) {
-      .modal-content { max-width: 90%; padding: 15px }
-      .modal-content p { font-size: 14px }
-      .modal-actions button, .modal-actions .btn { padding: 8px 12px; font-size: 14px }
-    }
-    .edit-modal-content { background: var(--card); padding: 20px; border-radius: var(--radius); border: 1px solid #1f2937; box-shadow: var(--shadow); width: 90%; max-width: 500px; text-align: center }
-    .edit-modal-content h3 { margin: 0 0 15px; color: var(--text) }
-    .edit-modal-content input { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #1f2937; border-radius: 8px; background: var(--panel); color: var(--text); font-size: 14px }
-    .edit-modal-content input:focus { border-color: var(--accent-2); box-shadow: 0 0 0 2px rgba(147,197,253,.12) }
+  /* Модалки */
+  .modal { position: fixed; inset:0; background: rgba(0, 0, 0, 0.5); display: none; justify-content: center; align-items: center; z-index: 100 }
+  .modal-content { background: var(--card); padding: 10px 20px 20px; border-radius: var(--radius); border: 1px solid #1f2937; box-shadow: var(--shadow); width: 90%; max-width: 400px; text-align: center }
+  .modal-content p { margin: 0 0 15px; color: var(--muted); font-size: 16px }
+  .modal-actions, .edit-actions { display: flex; justify-content: center; gap: 10px }
+  @media (max-width: 640px) {
+    .modal-content { max-width: 90%; padding: 15px }
+    .modal-content p { font-size: 14px }
+    .modal-actions button, .modal-actions .btn { padding: 8px 12px; font-size: 14px }
+  }
+  .edit-modal-content { background: var(--card); padding: 20px; border-radius: var(--radius); border: 1px solid #1f2937; box-shadow: var(--shadow); width: 90%; max-width: 500px; text-align: center }
+  .edit-modal-content h3 { margin: 0 0 15px; color: var(--text) }
+  .edit-modal-content input { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #1f2937; border-radius: 8px; background: var(--panel); color: var(--text); font-size: 14px }
+  .edit-modal-content input:focus { border-color: var(--accent-2); box-shadow: 0 0 0 2px rgba(147,197,253,.12) }
 
-    /* Лоадер */
-    .loader { border: 8px solid #f3f3f3; border-top: 8px solid #6ee7b7; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 0 auto; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) }
-    @keyframes spin { 0% { transform: translate(-50%, -50%) rotate(0deg) } 100% { transform: translate(-50%, -50%) rotate(360deg) } }
-    #list.loading { display: none }
-    .loader-container { position: relative; min-height: 200px; width: 100% }
+  /* Лоадер */
+  .loader { border: 8px solid #f3f3f3; border-top: 8px solid #6ee7b7; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 0 auto; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) }
+  @keyframes spin { 0% { transform: translate(-50%, -50%) rotate(0deg) } 100% { transform: translate(-50%, -50%) rotate(360deg) } }
+  #list.loading { display: none }
+  .loader-container { position: relative; min-height: 200px; width: 100% }
 
-    /* DnD визуальные состояния */
-    body.noselect { user-select: none }
-    .card.dragging { opacity: .6; cursor: grabbing; box-shadow: 0 16px 40px rgba(0,0,0,.55) }
+  /* DnD визуальные состояния */
+  body.noselect { user-select: none }
+  .card.dragging { opacity: .6; cursor: grabbing; box-shadow: 0 16px 40px rgba(0,0,0,.55) }
 
-    /* Анимация частиц */
-    .card.removing { opacity: 0; pointer-events: none; transition: opacity 0.2s ease }
-    .particles-container {
-      position: absolute;
-      z-index: 1000;
-      pointer-events: none;
-      background: transparent; /* Убрали отладочный фон */
-    }
-  </style>
+  /* Thanos Effect (CSS) */
+  .card.removing {
+    position: relative;
+    visibility: hidden; /* Сохраняем пространство карточки для анимации частиц */
+    pointer-events: none;
+    transition: visibility 0s linear 1.2s; /* Скрываем после анимации */
+  }
+  .card.removing .poster,
+  .card.removing .content,
+  .card.removing .actions {
+    opacity: 0;
+    transition: opacity 0.2s ease; /* Быстрое исчезновение содержимого */
+  }
+  .card.removing::before,
+  .card.removing::after,
+  .card.removing .particle-1::before,
+  .card.removing .particle-1::after,
+  .card.removing .particle-2::before,
+  .card.removing .particle-2::after,
+  .card.removing .particle-3::before,
+  .card.removing .particle-3::after,
+  .card.removing .particle-4::before,
+  .card.removing .particle-4::after,
+  .card.removing .particle-5::before,
+  .card.removing .particle-5::after,
+  .card.removing .particle-6::before,
+  .card.removing .particle-6::after,
+  .card.removing .particle-7::before,
+  .card.removing .particle-7::after,
+  .card.removing .particle-8::before,
+  .card.removing .particle-8::after,
+  .card.removing .particle-9::before,
+  .card.removing .particle-9::after {
+    content: '';
+    position: absolute;
+    width: var(--size, 8px);
+    height: var(--size, 8px);
+    background: #d1d5db; /* Серый цвет для "пыли" */
+    border-radius: 50%;
+    z-index: 1000;
+    animation: thanos-particle 1.2s ease-out forwards;
+  }
+  /* Позиции частиц */
+  .card.removing::before { top: 5%; left: 5%; --size: 6px; animation-delay: 0.1s; }
+  .card.removing::after { top: 95%; left: 95%; --size: 8px; animation-delay: 0.15s; }
+  .card.removing .particle-1::before { top: 15%; left: 20%; --size: 7px; animation-delay: 0.2s; }
+  .card.removing .particle-1::after { top: 25%; left: 30%; --size: 5px; animation-delay: 0.25s; }
+  .card.removing .particle-2::before { top: 35%; left: 40%; --size: 9px; animation-delay: 0.3s; }
+  .card.removing .particle-2::after { top: 45%; left: 50%; --size: 6px; animation-delay: 0.35s; }
+  .card.removing .particle-3::before { top: 55%; left: 60%; --size: 8px; animation-delay: 0.2s; }
+  .card.removing .particle-3::after { top: 65%; left: 70%; --size: 7px; animation-delay: 0.25s; }
+  .card.removing .particle-4::before { top: 75%; left: 80%; --size: 6px; animation-delay: 0.3s; }
+  .card.removing .particle-4::after { top: 85%; left: 90%; --size: 5px; animation-delay: 0.35s; }
+  .card.removing .particle-5::before { top: 10%; left: 50%; --size: 8px; animation-delay: 0.15s; }
+  .card.removing .particle-5::after { top: 20%; left: 60%; --size: 7px; animation-delay: 0.2s; }
+  .card.removing .particle-6::before { top: 30%; left: 70%; --size: 6px; animation-delay: 0.25s; }
+  .card.removing .particle-6::after { top: 40%; left: 80%; --size: 9px; animation-delay: 0.3s; }
+  .card.removing .particle-7::before { top: 50%; left: 90%; --size: 5px; animation-delay: 0.35s; }
+  .card.removing .particle-7::after { top: 60%; left: 10%; --size: 8px; animation-delay: 0.2s; }
+  .card.removing .particle-8::before { top: 70%; left: 20%; --size: 7px; animation-delay: 0.25s; }
+  .card.removing .particle-8::after { top: 80%; left: 30%; --size: 6px; animation-delay: 0.3s; }
+  .card.removing .particle-9::before { top: 90%; left: 40%; --size: 9px; animation-delay: 0.35s; }
+  .card.removing .particle-9::after { top: 10%; left: 70%; --size: 5px; animation-delay: 0.2s; }
+  /* Анимация частиц */
+  @keyframes thanos-particle {
+    0% { transform: translate(0, 0); opacity: 0.8; scale: 1; }
+    100% { transform: translate(var(--x, 50px), var(--y, -50px)); opacity: 0; scale: 0.3; }
+  }
+  /* Траектории частиц */
+  .card.removing::before { --x: -70px; --y: -50px; }
+  .card.removing::after { --x: 60px; --y: 40px; }
+  .card.removing .particle-1::before { --x: 50px; --y: -60px; }
+  .card.removing .particle-1::after { --x: -40px; --y: 50px; }
+  .card.removing .particle-2::before { --x: 30px; --y: -70px; }
+  .card.removing .particle-2::after { --x: -60px; --y: 30px; }
+  .card.removing .particle-3::before { --x: 70px; --y: -40px; }
+  .card.removing .particle-3::after { --x: -50px; --y: 60px; }
+  .card.removing .particle-4::before { --x: 40px; --y: -50px; }
+  .card.removing .particle-4::after { --x: -70px; --y: 20px; }
+  .card.removing .particle-5::before { --x: 60px; --y: -30px; }
+  .card.removing .particle-5::after { --x: -30px; --y: 70px; }
+  .card.removing .particle-6::before { --x: 20px; --y: -60px; }
+  .card.removing .particle-6::after { --x: -50px; --y: 40px; }
+  .card.removing .particle-7::before { --x: 70px; --y: -20px; }
+  .card.removing .particle-7::after { --x: -40px; --y: 50px; }
+  .card.removing .particle-8::before { --x: 30px; --y: -70px; }
+  .card.removing .particle-8::after { --x: -60px; --y: 30px; }
+  .card.removing .particle-9::before { --x: 50px; --y: -40px; }
+  .card.removing .particle-9::after { --x: -20px; --y: 60px; }
+</style>
 </head>
 <body>
   <header>
@@ -322,70 +403,31 @@
       }, (error) => console.error('Ошибка загрузки:', error));
     }
 
-    // ======= PARTICLES ANIMATION (tsParticles) =======
+   // ======= PARTICLES ANIMATION (CSS Thanos Effect) =======
     function initParticles(card, callback) {
       if (!card) {
-        console.error('Card element not found for particles animation');
+        console.error('Card element not found for Thanos effect');
         callback();
         return;
       }
-
-      const rect = card.getBoundingClientRect();
-      const canvas = document.createElement('canvas');
-      const canvasId = `particles-${Math.random().toString(36).slice(2)}`;
-      canvas.id = canvasId;
-      canvas.className = 'particles-container';
-      canvas.style.position = 'absolute';
-      canvas.style.top = `${rect.top + window.scrollY}px`;
-      canvas.style.left = `${rect.left + window.scrollX}px`;
-      canvas.width = rect.width;
-      canvas.height = rect.height;
-      document.body.appendChild(canvas);
-
-      console.log('Creating tsParticles canvas:', canvasId, 'at', rect);
-
-      if (typeof tsParticles === 'undefined') {
-        console.error('tsParticles not loaded');
-        canvas.remove();
-        callback();
-        return;
+      console.log('Starting Thanos effect for card:', card.getAttribute('data-key'));
+    
+      // Добавляем элементы-обёртки для псевдоэлементов
+      for (let i = 1; i <= 9; i++) {
+        const particle = document.createElement('div');
+        particle.className = `particle-${i}`;
+        card.appendChild(particle);
       }
-
-      tsParticles.load({
-        id: canvasId,
-        options: {
-          fullScreen: { enable: false },
-          particles: {
-            number: { value: 150, density: { enable: true, value_area: 800 } },
-            color: { value: '#ffffff' },
-            shape: { type: 'circle' },
-            opacity: { value: 0.8, random: true, anim: { enable: true, speed: 2, opacity_min: 0, sync: false } },
-            size: { value: 5, random: { enable: true, minimumValue: 2 } },
-            move: {
-              enable: true,
-              speed: 10,
-              direction: 'none',
-              random: true,
-              straight: false,
-              outModes: { default: 'out' },
-              attract: { enable: false }
-            }
-          },
-          interactivity: { events: { onHover: { enable: false }, onClick: { enable: false } } },
-          retina_detect: true,
-          fpsLimit: 60
+    
+      setTimeout(() => {
+        console.log('Thanos effect completed');
+        // Удаляем обёртки частиц
+        for (let i = 1; i <= 9; i++) {
+          const particle = card.querySelector(`.particle-${i}`);
+          if (particle) particle.remove();
         }
-      }).then(() => {
-        setTimeout(() => {
-          console.log('Removing tsParticles canvas:', canvasId);
-          canvas.remove();
-          callback();
-        }, 1200);
-      }).catch(err => {
-        console.error('tsParticles load error:', err);
-        canvas.remove();
         callback();
-      });
+      }, 1200); // Длительность анимации 1.2 секунды
     }
 
     // ======= SUGGESTIONS UI =======
