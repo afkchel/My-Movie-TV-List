@@ -66,7 +66,6 @@
     .searchbar.searchbar-hidden { display: none; }
     .searchbar input[type="text"] { width: 100%; padding: 14px 48px 14px 16px; border-radius: 14px; background: var(--panel); color: var(--text); border: 1px solid #1f2937; outline: none; font-size: 16px; box-shadow: inset 0 1px 0 rgba(255,255,255,.02), var(--shadow) }
     .searchbar input:focus { border-color: var(--accent-2); box-shadow: 0 0 0 4px rgba(147,197,253,.12), var(--shadow) }
-    .searchbar .kbd { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font: 16px/1 monospace; color: var(--muted); opacity: .9 }
     .searchbar .add-btn { padding: 14px; border-radius: 14px; background: #111827; border: 1px solid #2b3443; color: var(--text); font-size: 16px; font-weight: 600; cursor: pointer; box-shadow: var(--shadow); height: 100%; display: flex; align-items: center; justify-content: center }
     .searchbar .add-btn:hover { background: #0f172a; border-color: #3b475a }
     .searchbar .add-btn.searchbar-hidden { display: none; }
@@ -96,9 +95,10 @@
       display: flex;
       flex-direction: column;
     }
+    .card.youtube { grid-column: span 6; } /* Adjusted span for YouTube videos */
     .card.wide { grid-column: span 6 }
-    @media (max-width: 640px) { .card, .card.wide { grid-column: span 4 } }
-    .poster { width: 100%; aspect-ratio: 3 / 4.2; object-fit: cover; background: #0b1220 }
+    @media (max-width: 640px) { .card, .card.wide, .card.youtube { grid-column: span 4 } }
+    .poster { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: #0b1220 } /* Changed to 16:9 for YouTube */
     .content { padding: 12px 14px 16px; flex: 0 0 auto; }
     .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 6px 0 }
     .description {
@@ -194,7 +194,7 @@
       </div>
       <div class="searchbar searchbar-hidden" id="searchbar" role="combobox" aria-expanded="false" aria-owns="suggestion-list">
         <input id="search" type="text" placeholder="Search for a film or show…" autocomplete="off" aria-autocomplete="list" aria-controls="suggestion-list" />
-        <span class="kbd">Enter ↵</span>
+        <!-- Removed .kbd span -->
         <button class="add-btn searchbar-hidden" id="add-video">+</button>
         <div id="suggestions" class="suggestions" role="listbox" aria-label="Search suggestions"></div>
       </div>
@@ -373,9 +373,18 @@
       return videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : '';
     }
 
-    function getYouTubeTitle(url) {
+    async function getYouTubeTitle(url) {
       const videoId = url.match(/[?&]v=([^&]+)/)?.[1] || url.split('/').pop();
-      return videoId ? `YouTube Video: ${videoId}` : 'Unnamed Video';
+      if (!videoId) return 'Unnamed Video';
+      const apiUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=${YOUTUBE_API_KEY}`;
+      try {
+        const res = await fetch(apiUrl);
+        const data = await res.json();
+        return data.items?.[0]?.snippet?.title || `YouTube Video: ${videoId}`;
+      } catch (e) {
+        console.warn('YouTube API title fetch error:', e);
+        return `YouTube Video: ${videoId}`;
+      }
     }
 
     function save() {
@@ -432,7 +441,7 @@
       const runtime = (m.runtime ? `${m.runtime} min` : (Array.isArray(m.episode_run_time) && m.episode_run_time[0]) ? `${m.episode_run_time[0]} min` : '');
       const description = m.overview ? `<p class="description">${esc(m.overview)}</p>` : '';
       const isYouTube = m.youtubeUrl;
-      return `<article class="card" data-key="${esc(key)}">
+      return `<article class="card${isYouTube ? ' youtube' : ''}" data-key="${esc(key)}">
         <img class="poster" src="${esc(poster)}" alt="Poster for ${esc(title)}" loading="lazy" />
         <div class="content">
           <h3 style="margin:0 0 6px">${esc(title)} ${!isYouTube && year ? `<span class=\"pill\" style=\"margin-left:6px\">${esc(year)}</span>` : ''}</h3>
@@ -539,9 +548,12 @@
         el.cancelAdd.removeEventListener('click', close);
         el.addVideoModal.removeEventListener('click', backdrop);
       };
-      const saveHandler = () => {
+      const saveHandler = async () => {
         const url = el.youtubeInput.value.trim();
-        if (url) onSave(url);
+        if (url) {
+          const title = await getYouTubeTitle(url);
+          onSave(url, title);
+        }
         close();
       };
       const backdrop = (e) => { if (e.target === el.addVideoModal) close(); };
@@ -550,10 +562,9 @@
       el.addVideoModal.addEventListener('click', backdrop);
     }
 
-    function addYouTubeVideo(url) {
+    async function addYouTubeVideo(url, title) {
       const key = `youtube_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      const youtubeTitle = getYouTubeTitle(url);
-      state.items[key] = { youtubeUrl: url, youtubeTitle: youtubeTitle, media_type: 'youtube' };
+      state.items[key] = { youtubeUrl: url, youtubeTitle: title, media_type: 'youtube' };
       state.order.unshift(key);
       save();
       renderList();
