@@ -1,7 +1,11 @@
 <!doctype html>
 <html lang="ru">
 <head>
-  <!-- Previous <head> content remains unchanged -->
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Список шедевров (TMDb)</title>
+  <meta name="description" content="Добро пожаловать на список не проходняков, составленный Леонидом" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'><text y='1em' font-size='96'>🎬</text></svg>">
   <style>
     :root {
       --bg: #0b0c0f;
@@ -174,7 +178,6 @@
   </style>
 </head>
 <body>
-  <!-- Previous <body> content remains unchanged -->
   <header>
     <div class="container">
       <div class="title">
@@ -343,7 +346,7 @@
     function save() {
       const payload = { items: state.items, order: state.order, updatedAt: Date.now(), device: getDeviceId() };
       set(ref(database, 'tmdbList'), payload)
-        .catch暴露错误：', err));
+        .catch(err => console.error('Ошибка сохранения:', err));
     }
 
     function subscribe() {
@@ -438,7 +441,7 @@
         m.media_type = type;
         m.customTrailerUrl = await searchYouTubeTrailer(m.title || m.name || '') || bestTrailerUrl(m) || '';
         state.items[key] = m;
-        राज्य.order.unshift(key);
+        state.order.unshift(key);
         save();
         renderList();
       }
