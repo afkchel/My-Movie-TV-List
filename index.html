@@ -6,17 +6,6 @@
   <title>Список шедевров (TMDb)</title>
   <meta name="description" content="Добро пожаловать на список не проходняков, составленный Леонидом" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'><text y='1em' font-size='96'>🎬</text></svg>">
-
-  <!--
-    =====================================================================
-    СТИЛИ
-    =====================================================================
-    Важно:
-    - Визуальный градиент фона
-    - Сетка карточек
-    - Стили для модалок
-    - Классы для dnd: .noselect, .dragging, .removing
-  -->
   <style>
     :root {
       --bg: #0b0c0f;
@@ -51,47 +40,22 @@
       50% { background-position: 100% 50%; }
       100% { background-position: 0% 50%; }
     }
-
     header { background: color-mix(in lab, var(--bg) 70%, transparent); border-bottom: 1px solid #1f2937 }
     .container { max-width: 980px; margin: 0 auto; padding: 16px }
     .title { display: flex; gap: 12px; align-items: center }
     .title h1 { margin: 0; font-weight: 800; letter-spacing: .2px; font-size: clamp(22px, 5vw, 30px) }
     .subtitle { margin: 6px 0 0; color: var(--muted); font-size: 14px }
-
     .searchbar { position: relative; margin-top: 14px }
-    .searchbar input[type="text"] {
-      width: 100%;
-      padding: 14px 48px 14px 16px;
-      border-radius: 14px;
-      background: var(--panel);
-      color: var(--text);
-      border: 1px solid #1f2937;
-      outline: none;
-      font-size: 16px;
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.02), var(--shadow)
-    }
+    .searchbar input[type="text"] { width: 100%; padding: 14px 48px 14px 16px; border-radius: 14px; background: var(--panel); color: var(--text); border: 1px solid #1f2937; outline: none; font-size: 16px; box-shadow: inset 0 1px 0 rgba(255,255,255,.02), var(--shadow) }
     .searchbar input:focus { border-color: var(--accent-2); box-shadow: 0 0 0 4px rgba(147,197,253,.12), var(--shadow) }
-    .searchbar .kbd {
-      position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
-      font: 12px/1 monospace; color: var(--muted); opacity: .9
-    }
-
-    .suggestions {
-      position: absolute; inset: auto 0 0 0; transform: translateY(100%);
-      background: var(--panel); border: 1px solid #1f2937; border-radius: 12px;
-      margin-top: 8px; max-height: 60dvh; overflow: auto; box-shadow: var(--shadow);
-      display: none; z-index: 100
-    }
+    .searchbar .kbd { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font: 12px/1 monospace; color: var(--muted); opacity: .9 }
+    .suggestions { position: absolute; inset: auto 0 0 0; transform: translateY(100%); background: var(--panel); border: 1px solid #1f2937; border-radius: 12px; margin-top: 8px; max-height: 60dvh; overflow: auto; box-shadow: var(--shadow); display: none; z-index: 100 }
     .suggestions.open { display: block }
-    .suggestion {
-      display: grid; grid-template-columns: 46px 1fr auto; gap: 12px;
-      align-items: center; padding: 10px 12px; cursor: pointer
-    }
+    .suggestion { display: grid; grid-template-columns: 46px 1fr auto; gap: 12px; align-items: center; padding: 10px 12px; cursor: pointer }
     .suggestion:hover, .suggestion[aria-selected="true"] { background: #0b1220 }
     .suggestion img { width: 46px; height: 68px; object-fit: cover; border-radius: 8px; background: #0b1220 }
     .suggestion .meta { display: flex; flex-direction: column; gap: 4px }
     .pill { font-size: 12px; color: var(--muted); padding: 2px 8px; border: 1px solid #374151; border-radius: 999px }
-
     main .container { padding-top: 10px }
     .list {
       display: grid;
@@ -101,7 +65,6 @@
     }
     @media (max-width: 900px) { .list { grid-template-columns: repeat(6, 1fr) } }
     @media (max-width: 640px) { .list { grid-template-columns: repeat(4, 1fr) } }
-
     .card {
       grid-column: span 4;
       background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0)), var(--card);
@@ -115,7 +78,6 @@
     .sortable .card { cursor: grab }
     .card.wide { grid-column: span 6 }
     @media (max-width: 640px) { .card, .card.wide { grid-column: span 4 } }
-
     .poster { width: 100%; aspect-ratio: 3 / 4.2; object-fit: cover; background: #0b1220 }
     .content { padding: 12px 14px 16px; flex: 0 0 auto; }
     .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 6px 0 }
@@ -125,7 +87,6 @@
       margin: 6px 0 0;
       font-size: 14px;
     }
-
     .actions {
       margin-top: auto;
       display: flex;
@@ -149,7 +110,6 @@
       box-shadow: var(--shadow)
     }
     button:hover { background: #0f172a; border-color: #3b475a }
-
     .btn-ghost {
       background: transparent;
       border: 1px solid #374151;
@@ -169,158 +129,50 @@
       font-size: 16px
     }
     .btn-ghost:hover { background: #0f172a; border-color: #3b475a }
-
     .btn-danger { border-color: #7f1d1d; background: #1f0f12 }
     .btn-danger:hover { background: #2b0f12; border-color: #991b1b }
-
     footer { color: var(--muted); font-size: 12px; border-top: 1px solid #1f2937 }
     a { color: var(--accent-2); text-decoration: none }
     a:hover { text-decoration: underline }
-
     .modal { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); display: none; justify-content: center; align-items: center; z-index: 100 }
     .modal-content { background: var(--card); padding: 10px 20px 20px; border-radius: var(--radius); border: 1px solid #1f2937; box-shadow: var(--shadow); width: 90%; max-width: 400px; text-align: center }
     .modal-content p { margin: 0 0 15px; color: var(--muted); font-size: 16px }
     .modal-actions, .edit-actions { display: flex; justify-content: center; gap: 10px }
-
     @media (max-width: 640px) {
       .modal-content { max-width: 90%; padding: 15px }
       .modal-content p { font-size: 14px }
       .modal-actions button, .modal-actions .btn { padding: 8px 12px; font-size: 14px }
     }
-
-    .edit-modal-content {
-      background: var(--card);
-      padding: 20px;
-      border-radius: var(--radius);
-      border: 1px solid #1f2937;
-      box-shadow: var(--shadow);
-      width: 90%;
-      max-width: 500px;
-      text-align: center
-    }
+    .edit-modal-content { background: var(--card); padding: 20px; border-radius: var(--radius); border: 1px solid #1f2937; box-shadow: var(--shadow); width: 90%; max-width: 500px; text-align: center }
     .edit-modal-content h3 { margin: 0 0 15px; color: var(--text) }
-    .edit-modal-content input {
-      width: 100%; padding: 10px; margin-bottom: 15px;
-      border: 1px solid #1f2937; border-radius: 8px;
-      background: var(--panel); color: var(--text); font-size: 14px
-    }
+    .edit-modal-content input { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #1f2937; border-radius: 8px; background: var(--panel); color: var(--text); font-size: 14px }
     .edit-modal-content input:focus { border-color: var(--accent-2); box-shadow: 0 0 0 2px rgba(147,197,253,.12) }
-
-    .loader {
-      border: 8px solid #0b0c0f;
-      border-top: 8px solid #6ee7b7;
-      border-radius: 50%;
-      width: 50px; height: 50px;
-      animation: spin 1s linear infinite;
-      margin: 0 auto;
-      position: absolute; top: 50%; left: 50%;
-      transform: translate(-50%, -50%)
-    }
+    .loader { border: 8px solid #0b0c0f; border-top: 8px solid #6ee7b7; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 0 auto; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) }
     @keyframes spin { 0% { transform: translate(-50%, -50%) rotate(0deg) } 100% { transform: translate(-50%, -50%) rotate(360deg) } }
     #list.loading { display: none }
-
-    /* DnD helpers */
+    .loader-container { position: relative; min-height: 200px; width: 100% }
     body.noselect { user-select: none }
     .card.dragging { opacity: 0.6; cursor: grabbing; }
     .card.removing { opacity: 0; visibility: hidden; transition: opacity 0.5s ease, visibility 0s linear 0.5s; }
-
-    /* Плейсхолдер позиционирования (тонкая линия между карточками) */
-    .drop-indicator {
-      height: 0; border-top: 2px dashed rgba(255,255,255,.25);
-      grid-column: 1 / -1;
-      margin: -6px 0;
-    }
   </style>
 </head>
 <body>
-  <header>
-    <div class="container">
-      <div class="title">
-        <div style="font-size:26px">🎬</div>
-        <div>
-          <h1>Список шедевров</h1>
-          <p class="subtitle">Добро пожаловать на список не проходняков, составленный Леонидом</p>
-        </div>
-      </div>
-
-      <!-- Поиск -->
-      <div class="searchbar" id="searchbar" role="combobox" aria-expanded="false" aria-owns="suggestion-list">
-        <input id="search" type="text" placeholder="Search for a film or show…" autocomplete="off" aria-autocomplete="list" aria-controls="suggestion-list" />
-        <span class="kbd">Enter ↵</span>
-        <div id="suggestions" class="suggestions" role="listbox" aria-label="Search suggestions"></div>
-      </div>
-    </div>
-  </header>
-
-  <main>
-    <div class="container">
-      <div class="loader-container">
-        <div id="loader" class="loader"></div>
-        <div id="list" class="list loading" aria-live="polite"></div>
-      </div>
-    </div>
-  </main>
-
-  <footer>
-    <div class="container">
-      Data from TMDb (The Movie Database). This product uses the TMDb API but is not endorsed or certified by TMDb.
-    </div>
-  </footer>
-
-  <!-- Модалка удаления -->
-  <div id="modal" class="modal" aria-modal="true" role="dialog" aria-labelledby="modal-title">
-    <div class="modal-content">
-      <p>Вы уверены, что хотите удалить <strong id="modal-title"></strong>?</p>
-      <div class="modal-actions">
-        <button class="btn btn-danger" id="confirm-delete">Да</button>
-        <button class="btn btn-ghost" id="cancel-delete">Нет</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Модалка редактирования трейлера -->
-  <div id="edit-modal" class="modal" aria-modal="true" role="dialog" aria-labelledby="edit-title">
-    <div class="edit-modal-content">
-      <h3 id="edit-title">Редактировать ссылку на трейлер</h3>
-      <input type="text" id="trailer-link-input" placeholder="Введите URL трейлера" />
-      <div class="edit-actions">
-        <button class="btn btn-danger" id="save-trailer">Сохранить</button>
-        <button class="btn btn-ghost" id="cancel-edit">Отмена</button>
-      </div>
-    </div>
-  </div>
-
-  <!--
-    =====================================================================
-    СКРИПТ (type="module")
-    =====================================================================
-    Полная функциональность:
-    - TMDB search + details
-    - YouTube trailer поиск
-    - Firebase Realtime Database sync
-    - ПОЛНОСТЬЮ ЧИСТЫЙ JS Drag & Drop для перестановки карточек
-    - Ограничение по устройству (allowedDevice)
-  -->
+  <div id="root"></div>
   <script type="module">
-    'use strict';
-
-    /* ==============================
-       КОНСТАНТЫ И КОНФИГ
-       ============================== */
+    'use strict'
     const TMDB_API_KEY = "166bdfecdc09d46826d8662b9627ad27";
     const TMDB_IMG_BASE = "https://image.tmdb.org/t/p/";
     const LANGUAGE = "ru";
     const YOUTUBE_API_KEY = "AIzaSyCUHWrkVFi1UO1y8NKSkWtrT_W1aZpdBDM";
     const SEARCH_DELAY_MS = 350;
-
-    // Разрешённое устройство (ID|UA)
     const ALLOWED_DEVICE_ID = "30a62442-ecd5-4abf-9b51-22b34ae85d2e|Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36";
 
-    /* ==============================
-       FIREBASE (v12 SDK, модульно)
-       ============================== */
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
     import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
+    import React, { useState, useEffect, useRef, useCallback } from 'https://esm.sh/react@18';
+    import ReactDOM from 'https://esm.sh/react-dom@18';
+    import SortableList, { SortableItem } from 'https://esm.sh/react-easy-sort';
+    import { arrayMoveImmutable } from 'https://esm.sh/array-move';
 
     const firebaseConfig = {
       apiKey: "AIzaSyDu8R38EkqOxBDkcgfnYf5mBTCosQsOoGA",
@@ -335,49 +187,6 @@
     const app = initializeApp(firebaseConfig);
     const database = getDatabase(app);
 
-    /* ==============================
-       ГЛОБАЛЬНОЕ СОСТОЯНИЕ
-       ============================== */
-    const state = {
-      items: /** @type {Record<string, any>} */ ({}),
-      order: /** @type {string[]} */ ([]),
-      selectedIndex: -1,
-      suggestions: [],
-    };
-
-    // Флаги для синхронизации и dnd
-    let isDragging = false;          // идёт локальное перетаскивание
-    let suppressRemote = false;      // подавление принятия remote-снапшота некоторое время после локального save()
-    let localUpdatedAt = 0;          // чтобы не затирать локальные изменения более старыми remote-данными
-    let dragIndicator = null;        // DOM-элемент индикатора вставки между карточками
-
-    /* ==============================
-       УТИЛИТЫ
-       ============================== */
-    const $ = (sel, ctx=document) => ctx.querySelector(sel);
-    const $$ = (sel, ctx=document) => [...ctx.querySelectorAll(sel)];
-    const esc = (s="") => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
-    const debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t=setTimeout(() => fn(...a), ms); }; };
-
-    const el = {
-      searchbar: $('#searchbar'),
-      search: $('#search'),
-      suggestions: $('#suggestions'),
-      list: $('#list'),
-      loader: $('#loader'),
-      modal: $('#modal'),
-      modalTitle: $('#modal-title'),
-      confirmDelete: $('#confirm-delete'),
-      cancelDelete: $('#cancel-delete'),
-      editModal: $('#edit-modal'),
-      trailerInput: $('#trailer-link-input'),
-      saveTrailer: $('#save-trailer'),
-      cancelEdit: $('#cancel-edit'),
-    };
-
-    /* ==============================
-       УСТРОЙСТВО И РАЗРЕШЕНИЕ
-       ============================== */
     function getDeviceId() {
       let deviceId = localStorage.getItem('deviceId');
       if (!deviceId) {
@@ -388,12 +197,7 @@
       }
       return deviceId + '|' + navigator.userAgent;
     }
-    const allowedDevice = getDeviceId() === ALLOWED_DEVICE_ID;
-    if (allowedDevice) el.list.classList.add('sortable');
 
-    /* ==============================
-       API TMDb / YouTube
-       ============================== */
     function apiUrl(path, params = {}) {
       const base = new URL('https://api.themoviedb.org/3' + path);
       const sp = new URLSearchParams({ api_key: TMDB_API_KEY, language: LANGUAGE, ...params });
@@ -444,453 +248,335 @@
       return pick ? `https://www.youtube.com/watch?v=${pick.key}` : '';
     }
 
-    /* ==============================
-       PERSIST (Firebase)
-       ============================== */
-    function save() {
-      const payload = { items: state.items, order: state.order, updatedAt: Date.now(), device: getDeviceId() };
-      localUpdatedAt = payload.updatedAt;
-      suppressRemote = true;
-      setTimeout(() => { suppressRemote = false; }, 800);
-      set(ref(database, 'tmdbList'), payload)
-        .catch(err => console.error('Ошибка сохранения:', err));
+    function debounce(fn, ms) {
+      let t;
+      return (...a) => {
+        clearTimeout(t);
+        t = setTimeout(() => fn(...a), ms);
+      };
     }
 
-    function subscribe() {
-      onValue(ref(database, 'tmdbList'), (snapshot) => {
-        const data = snapshot.val();
-        if (!data) return;
-
-        // игнор во время локального перетаскивания или в окно подавления
-        if (isDragging || suppressRemote) return;
-        if ((data.updatedAt ?? 0) < localUpdatedAt) return;
-
-        state.items = data.items || {};
-        state.order = data.order || [];
-
-        // заполнить кастомный трейлер (если отсутствует)
-        for (const k of Object.keys(state.items)) {
-          const m = state.items[k];
-          if (!m.customTrailerUrl) m.customTrailerUrl = bestTrailerUrl(m) || '';
-        }
-        renderList();
-      }, (error) => console.error('Ошибка загрузки:', error));
-    }
-
-    /* ==============================
-       РЕНДЕРИНГ
-       ============================== */
-    function openSuggestions(items) {
-      state.suggestions = items;
-      el.suggestions.innerHTML = items.map((it, idx) => {
-        const title = it.title || it.name || '';
-        const year = (it.release_date || it.first_air_date || '').slice(0,4);
-        const poster = it.poster_path ? imgUrl(it.poster_path, 'w154') : '';
-        return `<div class="suggestion" role="option" data-type="${esc(it.media_type)}" data-id="${esc(it.id)}" aria-selected="${idx===state.selectedIndex}">
-          <img src="${esc(poster)}" alt="" loading="lazy" />
-          <div class="meta">
-            <div style="font-weight:700">${esc(title)}</div>
-            <div class="pill">${esc(year||'')}</div>
-          </div>
-          <div class="pill">${esc(it.media_type)}</div>
-        </div>`;
-      }).join('');
-      el.suggestions.classList.add('open');
-      el.searchbar.setAttribute('aria-expanded', 'true');
-    }
-
-    function closeSuggestions() {
-      el.suggestions.classList.remove('open');
-      el.searchbar.setAttribute('aria-expanded', 'false');
-      state.selectedIndex = -1; state.suggestions = [];
-    }
-
-    function cardTemplate(m, key) {
-      const poster = m.poster_path ? imgUrl(m.poster_path, 'w500') : '';
+    const Card = ({ m, keyProp, allowedDevice, onDelete, onEdit, onTrailer }) => {
+      if (!m) return null;
+      const poster = imgUrl(m.poster_path, 'w500');
       const title = m.title || m.name || '';
-      const year = (m.release_date || m.first_air_date || '').slice(0,4) || '';
-      const genres = (m.genres||[]).slice(0,3).map(g=>`<span class="pill">${esc(g.name)}</span>`).join('');
-      const rating = (m.vote_average && m.vote_count>0) ? `⭐${Number(m.vote_average).toFixed(1)}` : '';
-      const runtime = (m.runtime ? `${m.runtime} min` : (Array.isArray(m.episode_run_time) && m.episode_run_time[0]) ? `${m.episode_run_time[0]} min` : '');
-      const description = m.overview ? `<p class="description">${esc(m.overview)}</p>` : '';
-
-      return `<article class="card" data-key="${esc(key)}" aria-grabbed="false">
-        <img class="poster" src="${esc(poster)}" alt="Poster for ${esc(title)}" loading="lazy" />
-        <div class="content">
-          <h3 style="margin:0 0 6px">${esc(title)} ${year ? `<span class="pill" style="margin-left:6px">${esc(year)}</span>` : ''}</h3>
-          <div class="row">${genres}</div>
-          ${description}
-        </div>
-        <div class="actions">
-          <div class="row" style="gap:8px">
-            ${rating ? `<span class="pill">${esc(rating)}</span>` : ''}
-            ${runtime ? `<span class="pill">${esc(runtime)}</span>` : ''}
-            <span class="pill">${esc(m.media_type.toUpperCase())}</span>
+      const year = (m.release_date || m.first_air_date || '').slice(0, 4) || '';
+      const genres = (m.genres || []).slice(0, 3).map(g => <span key={g.id} className="pill">{g.name}</span>);
+      const rating = (m.vote_average && m.vote_count > 0) ? `⭐${m.vote_average.toFixed(1)}` : '';
+      const runtime = m.runtime ? `${m.runtime} min` : (Array.isArray(m.episode_run_time) && m.episode_run_time[0] ? `${m.episode_run_time[0]} min` : '');
+      const description = m.overview ? <p className="description">{m.overview}</p> : null;
+      return (
+        <article className="card" data-key={keyProp} aria-grabbed="false">
+          <img className="poster" src={poster} alt={`Poster for ${title}`} loading="lazy" />
+          <div className="content">
+            <h3 style={{ margin: '0 0 6px' }}>{title} {year ? <span className="pill" style={{ marginLeft: '6px' }}>{year}</span> : null}</h3>
+            <div className="row">{genres}</div>
+            {description}
           </div>
-          <div class="row" style="gap:8px">
-            <a class="btn-ghost" href="#" data-trailer="${esc(key)}" rel="noreferrer">Трейлер</a>
-            <button class="btn-ghost" data-remove="${esc(key)}" title="Удалить">Удалить</button>
-            ${allowedDevice ? `<button class="btn-ghost" data-edit="${esc(key)}" title="Редактировать трейлер">⚙️</button>` : ''}
+          <div className="actions">
+            <div className="row" style={{ gap: '8px' }}>
+              {rating ? <span className="pill">{rating}</span> : null}
+              {runtime ? <span className="pill">{runtime}</span> : null}
+              <span className="pill">{m.media_type.toUpperCase()}</span>
+            </div>
+            <div className="row" style={{ gap: '8px' }}>
+              <a className="btn-ghost" href="#" onClick={(e) => { e.preventDefault(); onTrailer(); }} rel="noreferrer">Трейлер</a>
+              <button className="btn-ghost" onClick={onDelete} title="Удалить">Удалить</button>
+              {allowedDevice ? <button className="btn-ghost" onClick={onEdit} title="Редактировать трейлер">⚙️</button> : null}
+            </div>
           </div>
-        </div>
-      </article>`;
-    }
+        </article>
+      );
+    };
 
-    function renderList() {
-      el.list.classList.remove('loading');
-      el.loader.style.display = 'none';
+    const App = () => {
+      const [items, setItems] = useState({});
+      const [order, setOrder] = useState([]);
+      const [suggestions, setSuggestions] = useState([]);
+      const [selectedIndex, setSelectedIndex] = useState(-1);
+      const [isLoading, setIsLoading] = useState(true);
+      const [searchValue, setSearchValue] = useState('');
+      const [showDeleteModal, setShowDeleteModal] = useState(false);
+      const [deleteKey, setDeleteKey] = useState(null);
+      const [deleteTitle, setDeleteTitle] = useState('');
+      const [showEditModal, setShowEditModal] = useState(false);
+      const [editKey, setEditKey] = useState(null);
+      const [trailerValue, setTrailerValue] = useState('');
+      const deviceId = getDeviceId();
+      const allowedDevice = deviceId === ALLOWED_DEVICE_ID;
+      const localUpdatedAtRef = useRef(0);
+      const suppressRemoteRef = useRef(false);
+      const isDraggingRef = useRef(false);
+      const searchbarRef = useRef(null);
 
-      if (!state.order.length) {
-        el.list.innerHTML = `<div class="card wide"><div class="content"><h3 style="margin:6px 0 6px">Your list is empty</h3><p class="subtitle">Search above and click a result to add a movie or TV show.</p></div></div>`;
-        return;
-      }
-      el.list.innerHTML = state.order.map(key => cardTemplate(state.items[key], key)).join('');
+      const doSearch = useCallback(debounce(async (q) => {
+        if (!q) {
+          setSuggestions([]);
+          return;
+        }
+        const data = await searchMulti(q);
+        if (data.Error) {
+          setSuggestions([]);
+          return;
+        }
+        setSuggestions(data.results || []);
+        setSelectedIndex(-1);
+      }, SEARCH_DELAY_MS), []);
 
-      // Инициализировать DnD после рендера
-      initPureJsDnD();
-    }
-
-    /* ==============================
-       ОПЕРАЦИИ
-       ============================== */
-    async function addItem(type, id) {
-      const key = `${type}_${id}`;
-      if (state.items[key]) return;
-
-      const m = await fetchDetails(type, id);
-      if (m && !m.status_code) {
-        m.media_type = type;
-        m.customTrailerUrl = await searchYouTubeTrailer(m.title || m.name || '') || bestTrailerUrl(m) || '';
-        state.items[key] = m;
-        state.order.unshift(key);
-        save();
-        renderList();
-      }
-    }
-
-    function openConfirmModal(title, key, card) {
-      el.modalTitle.textContent = title;
-      el.modal.style.display = 'flex';
-
-      const close = () => { el.modal.style.display = 'none'; cleanup(); };
-      const cleanup = () => {
-        el.confirmDelete.removeEventListener('click', confirmHandler);
-        el.cancelDelete.removeEventListener('click', close);
-        el.modal.removeEventListener('click', backdrop);
+      const save = () => {
+        const payload = { items, order, updatedAt: Date.now(), device: deviceId };
+        localUpdatedAtRef.current = payload.updatedAt;
+        suppressRemoteRef.current = true;
+        setTimeout(() => { suppressRemoteRef.current = false; }, 800);
+        set(ref(database, 'tmdbList'), payload).catch(err => console.error('Ошибка сохранения:', err));
       };
-      const confirmHandler = () => {
-        if (card) {
-          card.classList.add('removing');
-          setTimeout(() => {
-            delete state.items[key];
-            state.order = state.order.filter(x => x !== key);
-            save();
-            renderList();
-          }, 500);
-        } else {
-          delete state.items[key];
-          state.order = state.order.filter(x => x !== key);
+
+      useEffect(() => {
+        const unsubscribe = onValue(ref(database, 'tmdbList'), (snapshot) => {
+          const data = snapshot.val();
+          if (!data) return;
+          if (isDraggingRef.current || suppressRemoteRef.current) return;
+          if (data.updatedAt < localUpdatedAtRef.current) return;
+          const newItems = data.items || {};
+          for (const k in newItems) {
+            const m = newItems[k];
+            if (!m.customTrailerUrl) m.customTrailerUrl = bestTrailerUrl(m) || '';
+          }
+          setItems(newItems);
+          setOrder(data.order || []);
+          setIsLoading(false);
+        }, (error) => console.error('Ошибка загрузки:', error));
+        return unsubscribe;
+      }, []);
+
+      useEffect(() => {
+        const handleClickOutside = (e) => {
+          if (searchbarRef.current && !searchbarRef.current.contains(e.target)) {
+            setSuggestions([]);
+          }
+        };
+        document.addEventListener('click', handleClickOutside);
+        return () => document.removeEventListener('click', handleClickOutside);
+      }, []);
+
+      const addItem = async (type, id) => {
+        const key = `${type}_${id}`;
+        if (items[key]) return;
+        const m = await fetchDetails(type, id);
+        if (m && !m.status_code) {
+          m.media_type = type;
+          m.customTrailerUrl = await searchYouTubeTrailer(m.title || m.name || '') || bestTrailerUrl(m) || '';
+          setItems(prev => ({ ...prev, [key]: m }));
+          setOrder(prev => [key, ...prev]);
           save();
-          renderList();
         }
-        close();
       };
-      const backdrop = (e) => { if (e.target === el.modal) close(); };
-      el.confirmDelete.addEventListener('click', confirmHandler, { once: true });
-      el.cancelDelete.addEventListener('click', close);
-      el.modal.addEventListener('click', backdrop);
-    }
 
-    function openEditModal(currentUrl, onSave) {
-      el.trailerInput.value = currentUrl || '';
-      el.editModal.style.display = 'flex';
-
-      const close = () => { el.editModal.style.display = 'none'; cleanup(); };
-      const cleanup = () => {
-        el.saveTrailer.removeEventListener('click', saveHandler);
-        el.cancelEdit.removeEventListener('click', close);
-        el.editModal.removeEventListener('click', backdrop);
-      };
-      const saveHandler = () => { onSave(el.trailerInput.value.trim()); close(); };
-      const backdrop = (e) => { if (e.target === el.editModal) close(); };
-
-      el.saveTrailer.addEventListener('click', saveHandler, { once: true });
-      el.cancelEdit.addEventListener('click', close);
-      el.editModal.addEventListener('click', backdrop);
-    }
-
-    const doSearch = debounce(async () => {
-      const q = el.search.value.trim();
-      if (!q) { closeSuggestions(); return; }
-      const data = await searchMulti(q);
-      if (!data || data.Error) {
-        el.suggestions.innerHTML = `<div class="suggestion" aria-disabled="true">${esc(data?.Error || 'No results')}</div>`;
-        el.suggestions.classList.add('open');
-        return;
-      }
-      openSuggestions(data.results);
-    }, SEARCH_DELAY_MS);
-
-    function highlight() {
-      $$('.suggestion', el.suggestions).forEach((n, i) => n.setAttribute('aria-selected', String(i===state.selectedIndex)));
-    }
-
-    /* ==============================
-       ПОЛНОСТЬЮ ЧИСТЫЙ JS DRAG & DROP
-       ==============================
-       Цели:
-       - Перетаскивание ЛКМ без выделения текста
-       - Без библиотек
-       - Стабильная синхронизация с Firebase
-       - Пересоздание слушателей после каждого рендера
-    */
-    function initPureJsDnD() {
-      if (!allowedDevice) return;
-
-      const container = el.list;
-
-      // Удалить старый индикатор, если остался
-      if (dragIndicator && dragIndicator.parentNode) {
-        dragIndicator.parentNode.removeChild(dragIndicator);
-      }
-      dragIndicator = document.createElement('div');
-      dragIndicator.className = 'drop-indicator';
-
-      let draggedEl = null;
-      let originIndex = -1;
-
-      // Разрешать drag только при mousedown ЛКМ по карточке не на кнопках/ссылках
-      function shouldStartDrag(evt) {
-        if (evt.button !== 0) return false; // только ЛКМ
-        const bad = evt.target.closest('.btn-ghost, button, a, [data-remove], [data-edit], [data-trailer]');
-        return !bad;
-      }
-
-      // Получить текущий список карточек
-      const getCards = () => $$('.card', container);
-
-      // Обновить state.order исходя из DOM-порядка
-      function commitOrderFromDOM() {
-        const keys = getCards().map(c => c.getAttribute('data-key'));
-        state.order = keys;
+      const handleSortEnd = (oldIndex, newIndex) => {
+        isDraggingRef.current = true;
+        const newOrder = arrayMoveImmutable(order, oldIndex, newIndex);
+        setOrder(newOrder);
         save();
-      }
+        setTimeout(() => { isDraggingRef.current = false; }, 100);
+      };
 
-      // Вставить индикатор перед/после target в зависимости от мыши
-      function placeIndicator(targetCard, clientY) {
-        const rect = targetCard.getBoundingClientRect();
-        const isAfter = (clientY - rect.top) / rect.height > 0.5;
-        container.insertBefore(dragIndicator, isAfter ? targetCard.nextSibling : targetCard);
-      }
+      const handleSearchChange = (e) => {
+        setSearchValue(e.target.value);
+        doSearch(e.target.value.trim());
+      };
 
-      // Снять общие визуальные эффекты
-      function cleanupDragVisuals() {
-        document.body.classList.remove('noselect');
-        if (dragIndicator && dragIndicator.parentNode) {
-          dragIndicator.parentNode.removeChild(dragIndicator);
-        }
-        getCards().forEach(c => c.classList.remove('dragging'));
-      }
-
-      // Навесить обработчики на каждую карточку
-      getCards().forEach((card) => {
-        // Назначим draggable динамически только при старте dnd
-        card.addEventListener('mousedown', (e) => {
-          if (!shouldStartDrag(e)) {
-            card.setAttribute('draggable', 'false');
-            return;
-          }
-          card.setAttribute('draggable', 'true');
-        });
-
-        // Обязательно вотчер на mouseup: если нет перетаскивания — сбросить draggable
-        card.addEventListener('mouseup', () => {
-          // если не было dragstart, убрать draggable
-          if (!isDragging) card.removeAttribute('draggable');
-        });
-
-        card.addEventListener('dragstart', (e) => {
-          // Безопасность: иногда браузер не вызывает mousedown (например, клавиатурный dnd),
-          // но нам нужен только ЛКМ — проверим dataTransfer и цель.
-          if (!shouldStartDrag({ button: 0, target: e.target })) {
-            e.preventDefault();
-            return;
-          }
-
-          isDragging = true;
-          draggedEl = card;
-          originIndex = getCards().indexOf(card);
-
-          card.classList.add('dragging');
-          card.setAttribute('aria-grabbed', 'true');
-          document.body.classList.add('noselect');
-
-          // Убедимся, что перенос визуально "чистый"
-          if (e.dataTransfer) {
-            e.dataTransfer.effectAllowed = 'move';
-            // Прозрачный drag image, чтобы не мешал сетке
-            const img = new Image();
-            img.src =
-              'data:image/svg+xml;charset=utf-8,' +
-              encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"></svg>');
-            e.dataTransfer.setDragImage(img, 0, 0);
-          }
-        });
-
-        card.addEventListener('dragover', (e) => {
-          // Разрешить бросание
+      const handleSearchKeyDown = (e) => {
+        if (suggestions.length === 0) return;
+        const max = suggestions.length - 1;
+        if (e.key === 'ArrowDown') {
           e.preventDefault();
-          if (!draggedEl) return;
-
-          const target = e.target.closest('.card');
-          if (!target || target === draggedEl) return;
-
-          placeIndicator(target, e.clientY);
-        });
-
-        card.addEventListener('drop', (e) => {
+          setSelectedIndex(Math.min(max, selectedIndex + 1));
+        } else if (e.key === 'ArrowUp') {
           e.preventDefault();
-          const target = e.target.closest('.card');
-          if (!draggedEl || !target || target === draggedEl) return;
-
-          // Вставка в DOM по индикатору
-          if (dragIndicator && dragIndicator.parentNode === container) {
-            container.insertBefore(draggedEl, dragIndicator);
-          } else {
-            // fallback: если по какой-то причине нет индикатора — решаем по курсору
-            const rect = target.getBoundingClientRect();
-            const isAfter = (e.clientY - rect.top) / rect.height > 0.5;
-            container.insertBefore(draggedEl, isAfter ? target.nextSibling : target);
+          setSelectedIndex(Math.max(-1, selectedIndex - 1));
+        } else if (e.key === 'Enter') {
+          let sel;
+          if (selectedIndex >= 0) {
+            sel = suggestions[selectedIndex];
+          } else if (suggestions[0]) {
+            sel = suggestions[0];
           }
-        });
-
-        card.addEventListener('dragend', () => {
-          // Сброс визуала
-          card.classList.remove('dragging');
-          card.setAttribute('aria-grabbed', 'false');
-          card.removeAttribute('draggable');
-
-          // Обновить порядок, только если элемент реально переместили
-          const newIndex = getCards().indexOf(card);
-          if (newIndex !== originIndex && newIndex !== -1) {
-            commitOrderFromDOM();
-            // Ререндер для консистентности ключей и повторной инициализации слушателей
-            renderList();
+          if (sel) {
+            addItem(sel.media_type, sel.id);
+            setSuggestions([]);
+            setSearchValue('');
           }
-
-          cleanupDragVisuals();
-
-          // Короткая задержка, чтобы onValue не перезатирал порядок в момент завершения
-          setTimeout(() => { isDragging = false; }, 80);
-          draggedEl = null;
-          originIndex = -1;
-        });
-      });
-
-      // DnD также должен работать при перетаскивании "между карточками" — ловим dragover на контейнере
-      container.addEventListener('dragover', (e) => {
-        if (!draggedEl) return;
-        e.preventDefault();
-        const after = getCards().find(c => {
-          const rect = c.getBoundingClientRect();
-          return e.clientY < rect.top + rect.height / 2;
-        });
-        container.insertBefore(dragIndicator, after || null);
-      });
-
-      container.addEventListener('drop', (e) => {
-        e.preventDefault();
-        if (!draggedEl) return;
-        if (dragIndicator && dragIndicator.parentNode === container) {
-          container.insertBefore(draggedEl, dragIndicator);
+        } else if (e.key === 'Escape') {
+          setSuggestions([]);
         }
-      });
-    }
+      };
 
-    /* ==============================
-       ИНИЦИАЛИЗАЦИЯ
-       ============================== */
-    document.addEventListener('DOMContentLoaded', () => {
-      // Если устройство не совпадает — скрыть поиск и редактирование, dnd не включать
-      if (!allowedDevice) {
-        el.searchbar.style.display = 'none';
-      } else {
-        // Поиск
-        el.search.addEventListener('input', doSearch);
-        el.search.addEventListener('keydown', (e) => {
-          if (!el.suggestions.classList.contains('open')) return;
-          const max = state.suggestions.length - 1;
-          if (e.key === 'ArrowDown') { e.preventDefault(); state.selectedIndex = Math.min(max, state.selectedIndex + 1); highlight(); }
-          else if (e.key === 'ArrowUp') { e.preventDefault(); state.selectedIndex = Math.max(0, state.selectedIndex - 1); highlight(); }
-          else if (e.key === 'Enter') {
-            if (state.selectedIndex >= 0) {
-              const sel = state.suggestions[state.selectedIndex]; if (sel) addItem(sel.media_type, sel.id);
-            } else if (state.suggestions[0]) {
-              const sel = state.suggestions[0]; addItem(sel.media_type, sel.id);
-            }
-            closeSuggestions();
-            el.search.select();
-          } else if (e.key === 'Escape') { closeSuggestions(); }
-        });
+      return (
+        <>
+          <header>
+            <div className="container">
+              <div className="title">
+                <div style={{ fontSize: '26px' }}>🎬</div>
+                <div>
+                  <h1>Список шедевров</h1>
+                  <p className="subtitle">Добро пожаловать на список не проходняков, составленный Леонидом</p>
+                </div>
+              </div>
+              {allowedDevice && (
+                <div className="searchbar" role="combobox" aria-expanded={suggestions.length > 0} aria-owns="suggestion-list" ref={searchbarRef}>
+                  <input
+                    type="text"
+                    placeholder="Search for a film or show…"
+                    autoComplete="off"
+                    aria-autocomplete="list"
+                    aria-controls="suggestion-list"
+                    value={searchValue}
+                    onChange={handleSearchChange}
+                    onKeyDown={handleSearchKeyDown}
+                  />
+                  <span className="kbd">Enter ↵</span>
+                  <div className={`suggestions ${suggestions.length > 0 ? 'open' : ''}`} role="listbox" aria-label="Search suggestions">
+                    {suggestions.map((it, idx) => (
+                      <div
+                        key={it.id}
+                        className="suggestion"
+                        role="option"
+                        data-type={it.media_type}
+                        data-id={it.id}
+                        aria-selected={idx === selectedIndex}
+                        onClick={() => {
+                          addItem(it.media_type, it.id);
+                          setSuggestions([]);
+                          setSearchValue('');
+                        }}
+                      >
+                        <img src={imgUrl(it.poster_path, 'w154')} alt="" loading="lazy" />
+                        <div className="meta">
+                          <div style={{ fontWeight: 700 }}>{it.title || it.name || ''}</div>
+                          <div className="pill">{(it.release_date || it.first_air_date || '').slice(0, 4) || ''}</div>
+                        </div>
+                        <div className="pill">{it.media_type}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </header>
+          <main>
+            <div className="container">
+              <div className="loader-container">
+                {isLoading && <div className="loader"></div>}
+                {!isLoading && (
+                  order.length === 0 ? (
+                    <div className="card wide">
+                      <div className="content">
+                        <h3 style={{ margin: '6px 0 6px' }}>Your list is empty</h3>
+                        <p className="subtitle">Search above and click a result to add a movie or TV show.</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <SortableList
+                      onSortEnd={handleSortEnd}
+                      className={`list ${allowedDevice ? 'sortable' : ''}`}
+                      draggedItemClassName="dragging"
+                      allowDrag={allowedDevice}
+                      lockAxis="y"
+                    >
+                      {order.map((key) => (
+                        <SortableItem key={key}>
+                          <Card
+                            m={items[key]}
+                            keyProp={key}
+                            allowedDevice={allowedDevice}
+                            onDelete={() => {
+                              setDeleteKey(key);
+                              setDeleteTitle(items[key]?.title || items[key]?.name || 'Неизвестное произведение');
+                              setShowDeleteModal(true);
+                            }}
+                            onEdit={() => {
+                              setEditKey(key);
+                              setTrailerValue(items[key]?.customTrailerUrl || '');
+                              setShowEditModal(true);
+                            }}
+                            onTrailer={async () => {
+                              const m = items[key];
+                              if (!m) return;
+                              const title = m.title || m.name || '';
+                              let url = m.customTrailerUrl || bestTrailerUrl(m);
+                              if (!url) url = await searchYouTubeTrailer(title);
+                              if (url) window.open(url, '_blank');
+                              else alert('Трейлер не найден.');
+                            }}
+                          />
+                        </SortableItem>
+                      ))}
+                    </SortableList>
+                  )
+                )}
+              </div>
+            </div>
+          </main>
+          <footer>
+            <div className="container">
+              Data from TMDb (The Movie Database). This product uses the TMDb API but is not endorsed or certified by TMDb.
+            </div>
+          </footer>
+          {showDeleteModal && (
+            <div className="modal" style={{ display: 'flex' }} onClick={(e) => { if (e.target.className === 'modal') setShowDeleteModal(false); }}>
+              <div className="modal-content">
+                <p>Вы уверены, что хотите удалить <strong>{deleteTitle}</strong>?</p>
+                <div className="modal-actions">
+                  <button
+                    className="btn btn-danger"
+                    onClick={() => {
+                      setItems((prev) => { const n = { ...prev }; delete n[deleteKey]; return n; });
+                      setOrder((prev) => prev.filter((x) => x !== deleteKey));
+                      save();
+                      setShowDeleteModal(false);
+                    }}
+                  >
+                    Да
+                  </button>
+                  <button className="btn btn-ghost" onClick={() => setShowDeleteModal(false)}>Нет</button>
+                </div>
+              </div>
+            </div>
+          )}
+          {showEditModal && (
+            <div className="modal" style={{ display: 'flex' }} onClick={(e) => { if (e.target.className === 'modal') setShowEditModal(false); }}>
+              <div className="edit-modal-content">
+                <h3>Редактировать ссылку на трейлер</h3>
+                <input
+                  type="text"
+                  value={trailerValue}
+                  onChange={(e) => setTrailerValue(e.target.value)}
+                  placeholder="Введите URL трейлера"
+                />
+                <div className="edit-actions">
+                  <button
+                    className="btn btn-danger"
+                    onClick={() => {
+                      setItems((prev) => ({
+                        ...prev,
+                        [editKey]: { ...prev[editKey], customTrailerUrl: trailerValue.trim() },
+                      }));
+                      save();
+                      setShowEditModal(false);
+                    }}
+                  >
+                    Сохранить
+                  </button>
+                  <button className="btn btn-ghost" onClick={() => setShowEditModal(false)}>Отмена</button>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      );
+    };
 
-        el.suggestions.addEventListener('click', (e) => {
-          const item = e.target.closest('.suggestion');
-          if (!item) return;
-          const id = item.getAttribute('data-id');
-          const type = item.getAttribute('data-type');
-          if (id && type) { addItem(type, id); closeSuggestions(); el.search.select(); }
-        });
-
-        document.addEventListener('click', (e) => {
-          if (!el.searchbar.contains(e.target)) closeSuggestions();
-        });
-      }
-
-      // Делегирование кликов по карточкам: удалить / редактировать / трейлер
-      el.list.addEventListener('click', async (e) => {
-        const delBtn = e.target.closest('[data-remove]');
-        const editBtn = e.target.closest('[data-edit]');
-        const trailerLink = e.target.closest('[data-trailer]');
-
-        if (delBtn) {
-          const key = delBtn.getAttribute('data-remove');
-          const m = state.items[key];
-          if (!m) return;
-          const title = m.title || m.name || 'Неизвестное произведение';
-          const card = el.list.querySelector(`.card[data-key="${key}"]`);
-          openConfirmModal(title, key, card);
-          return;
-        }
-
-        if (editBtn && allowedDevice) {
-          const key = editBtn.getAttribute('data-edit');
-          const m = state.items[key];
-          if (!m) return;
-          openEditModal(m.customTrailerUrl || '', (val) => {
-            m.customTrailerUrl = val || '';
-            save();
-            renderList();
-          });
-          return;
-        }
-
-        if (trailerLink) {
-          e.preventDefault();
-          const key = trailerLink.getAttribute('data-trailer');
-          const m = state.items[key];
-          if (!m) return;
-          const title = m.title || m.name || '';
-          let url = m.customTrailerUrl || bestTrailerUrl(m);
-          if (!url) url = await searchYouTubeTrailer(title);
-          if (url) window.open(url, '_blank');
-          else alert('Трейлер не найден.');
-        }
-      });
-
-      // Старт realtime-подписки и первичного рендера
-      subscribe();
-      renderList(); // initPureJsDnD вызовется внутри
-    });
+    ReactDOM.render(<App />, document.getElementById('root'));
   </script>
 </body>
 </html>
