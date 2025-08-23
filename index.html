@@ -173,6 +173,8 @@
     #list.loading { display: none }
     .loader-container { position: relative; min-height: 200px; width: 100% }
     .card.removing { opacity: 0; visibility: hidden; transition: opacity 0.5s ease, visibility 0s linear 0.5s; }
+    .order-input { width: 40px; padding: 5px; border: 1px solid #374151; border-radius: 8px; background: var(--panel); color: var(--text); font-size: 14px; text-align: center; }
+    .order-input:focus { border-color: var(--accent-2); outline: none; }
   </style>
 </head>
 <body>
@@ -386,7 +388,7 @@
       state.selectedIndex = -1; state.suggestions = [];
     }
 
-    function cardTemplate(m, key) {
+    function cardTemplate(m, key, index) {
       const poster = m.poster_path ? imgUrl(m.poster_path, 'w500') : '';
       const title = m.title || m.name || '';
       const year = (m.release_date || m.first_air_date || '').slice(0,4) || '';
@@ -410,7 +412,12 @@
           <div class="row" style="gap:8px">
             <a class="btn-ghost" href="#" data-trailer="${esc(key)}" rel="noreferrer">Трейлер</a>
             <button class="btn-ghost" data-remove="${esc(key)}" title="Удалить">Удалить</button>
-            ${allowedDevice ? `<button class="btn-ghost" data-edit="${esc(key)}" title="Редактировать трейлер">⚙️</button>` : ''}
+            ${allowedDevice ? `
+              <div style="display:flex;gap:4px;align-items:center;">
+                <input type="number" class="order-input" data-order="${esc(key)}" value="${index + 1}" min="1" max="${state.order.length}" style="width:40px;" title="Порядок карточки">
+                <button class="btn-ghost" data-edit="${esc(key)}" title="Редактировать трейлер">⚙️</button>
+              </div>
+            ` : ''}
           </div>
         </div>
       </article>`;
@@ -423,7 +430,7 @@
         el.list.innerHTML = `<div class="card wide"><div class="content"><h3 style="margin:6px 0 6px">Your list is empty</h3><p class="subtitle">Search above and click a result to add a movie or TV show.</p></div></div>`;
         return;
       }
-      el.list.innerHTML = state.order.map(key => cardTemplate(state.items[key], key)).join('');
+      el.list.innerHTML = state.order.map((key, index) => cardTemplate(state.items[key], key, index)).join('');
     }
 
     async function addItem(type, id) {
@@ -486,6 +493,17 @@
       el.saveTrailer.addEventListener('click', saveHandler, { once: true });
       el.cancelEdit.addEventListener('click', close);
       el.editModal.addEventListener('click', backdrop);
+    }
+
+    function reorderItem(key, newPosition) {
+      const currentIndex = state.order.indexOf(key);
+      if (currentIndex === -1) return;
+      let newIndex = Math.max(0, Math.min(state.order.length - 1, newPosition - 1));
+      if (newIndex === currentIndex) return;
+      state.order.splice(currentIndex, 1);
+      state.order.splice(newIndex, 0, key);
+      save();
+      renderList();
     }
 
     const doSearch = debounce(async () => {
@@ -570,6 +588,18 @@
           if (!url) url = await searchYouTubeTrailer(title);
           if (url) window.open(url, '_blank');
           else alert('Трейлер не найден.');
+        }
+      });
+
+      el.list.addEventListener('change', (e) => {
+        if (allowedDevice && e.target.classList.contains('order-input')) {
+          const key = e.target.getAttribute('data-order');
+          const newPosition = parseInt(e.target.value);
+          if (!isNaN(newPosition) && newPosition >= 1 && newPosition <= state.order.length) {
+            reorderItem(key, newPosition);
+          } else {
+            e.target.value = state.order.indexOf(key) + 1; // Reset to current position
+          }
         }
       });
 
