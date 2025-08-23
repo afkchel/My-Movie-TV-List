@@ -44,7 +44,12 @@
         -ms-overflow-style: none; /* Edge */
       }
       body::-webkit-scrollbar {
-        display: none; /* Chrome, Safari */
+        display: none; /* Chrome, Safari on desktop */
+      }
+    }
+    @media (max-width: 640px) {
+      body::-webkit-scrollbar {
+        display: none; /* Chrome, Safari on mobile */
       }
     }
     @keyframes gradient {
