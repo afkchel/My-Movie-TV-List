@@ -38,6 +38,15 @@
       min-height: 100dvh;
       animation: gradient 8s ease infinite;
     }
+    @media (min-width: 641px) {
+      body {
+        scrollbar-width: none; /* Firefox */
+        -ms-overflow-style: none; /* Edge */
+      }
+      body::-webkit-scrollbar {
+        display: none; /* Chrome, Safari */
+      }
+    }
     @keyframes gradient {
       0% { background-position: 0% 50%; }
       50% { background-position: 100% 50%; }
