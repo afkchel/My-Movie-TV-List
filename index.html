@@ -25,7 +25,6 @@
     body {
       margin: 0;
       font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
-      /* Darker gradient + faster animation */
       background: linear-gradient(-45deg, #0f172a, #1e293b, #111827, #0b0c0f);
       background-size: 400% 400%;
       background-attachment: fixed;
@@ -64,7 +63,8 @@
       align-items: start;
     }
     @media (max-width: 900px) { .list { grid-template-columns: repeat(6, 1fr) } }
-    @media (max-width: 640px) { .list { grid-template-columns: repeat(4, 1fr) } }
+    @media (max-width: 640px) { .list威力 0.5s ease-in-out; } 
+    .list.sortable { touch-action: none; }
     .card {
       grid-column: span 4;
       background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0)), var(--card);
@@ -236,8 +236,14 @@
 
     async function fetchDetails(type, id) {
       const url = apiUrl(`/${type}/${id}`, { append_to_response: 'videos' });
-      const res = await fetch(url);
-      return await res.json();
+      try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('Failed to fetch details');
+        return await res.json();
+      } catch (e) {
+        console.warn('TMDb details error:', e);
+        return null;
+      }
     }
 
     function bestTrailerUrl(details) {
@@ -258,8 +264,8 @@
 
     const Card = ({ m, keyProp, allowedDevice, onDelete, onEdit, onTrailer }) => {
       if (!m) return null;
-      const poster = imgUrl(m.poster_path, 'w500');
-      const title = m.title || m.name || '';
+      const poster = imgUrl(m.poster_path, 'w500') || 'https://via.placeholder.com/300x420?text=No+Poster';
+      const title = m.title || m.name || 'Без названия';
       const year = (m.release_date || m.first_air_date || '').slice(0, 4) || '';
       const genres = (m.genres || []).slice(0, 3).map(g => <span key={g.id} className="pill">{g.name}</span>);
       const rating = (m.vote_average && m.vote_count > 0) ? `⭐${m.vote_average.toFixed(1)}` : '';
@@ -302,6 +308,7 @@
       const [showEditModal, setShowEditModal] = useState(false);
       const [editKey, setEditKey] = useState(null);
       const [trailerValue, setTrailerValue] = useState('');
+      const [error, setError] = useState(null);
       const deviceId = getDeviceId();
       const allowedDevice = deviceId === ALLOWED_DEVICE_ID;
       const localUpdatedAtRef = useRef(0);
@@ -314,13 +321,20 @@
           setSuggestions([]);
           return;
         }
-        const data = await searchMulti(q);
-        if (data.Error) {
+        try {
+          const data = await searchMulti(q);
+          if (data.Error) {
+            setSuggestions([]);
+            setError(data.Error);
+            return;
+          }
+          setSuggestions(data.results || []);
+          setSelectedIndex(-1);
+          setError(null);
+        } catch (e) {
           setSuggestions([]);
-          return;
+          setError('Ошибка поиска');
         }
-        setSuggestions(data.results || []);
-        setSelectedIndex(-1);
       }, SEARCH_DELAY_MS), []);
 
       const save = () => {
@@ -328,13 +342,20 @@
         localUpdatedAtRef.current = payload.updatedAt;
         suppressRemoteRef.current = true;
         setTimeout(() => { suppressRemoteRef.current = false; }, 800);
-        set(ref(database, 'tmdbList'), payload).catch(err => console.error('Ошибка сохранения:', err));
+        set(ref(database, 'tmdbList'), payload).catch(err => {
+          console.error('Ошибка сохранения:', err);
+          setError('Ошибка сохранения данных');
+        });
       };
 
       useEffect(() => {
         const unsubscribe = onValue(ref(database, 'tmdbList'), (snapshot) => {
           const data = snapshot.val();
-          if (!data) return;
+          if (!data) {
+            setIsLoading(false);
+            setError('Нет данных в базе');
+            return;
+          }
           if (isDraggingRef.current || suppressRemoteRef.current) return;
           if (data.updatedAt < localUpdatedAtRef.current) return;
           const newItems = data.items || {};
@@ -345,7 +366,12 @@
           setItems(newItems);
           setOrder(data.order || []);
           setIsLoading(false);
-        }, (error) => console.error('Ошибка загрузки:', error));
+          setError(null);
+        }, (error) => {
+          console.error('Ошибка загрузки:', error);
+          setError('Ошибка загрузки данных');
+          setIsLoading(false);
+        });
         return unsubscribe;
       }, []);
 
@@ -369,6 +395,8 @@
           setItems(prev => ({ ...prev, [key]: m }));
           setOrder(prev => [key, ...prev]);
           save();
+        } else {
+          setError('Не удалось добавить элемент');
         }
       };
 
@@ -436,28 +464,32 @@
                   />
                   <span className="kbd">Enter ↵</span>
                   <div className={`suggestions ${suggestions.length > 0 ? 'open' : ''}`} role="listbox" aria-label="Search suggestions">
-                    {suggestions.map((it, idx) => (
-                      <div
-                        key={it.id}
-                        className="suggestion"
-                        role="option"
-                        data-type={it.media_type}
-                        data-id={it.id}
-                        aria-selected={idx === selectedIndex}
-                        onClick={() => {
-                          addItem(it.media_type, it.id);
-                          setSuggestions([]);
-                          setSearchValue('');
-                        }}
-                      >
-                        <img src={imgUrl(it.poster_path, 'w154')} alt="" loading="lazy" />
-                        <div className="meta">
-                          <div style={{ fontWeight: 700 }}>{it.title || it.name || ''}</div>
-                          <div className="pill">{(it.release_date || it.first_air_date || '').slice(0, 4) || ''}</div>
+                    {suggestions.length === 0 && searchValue && !error ? (
+                      <div className="suggestion" aria-disabled="true">Нет результатов</div>
+                    ) : (
+                      suggestions.map((it, idx) => (
+                        <div
+                          key={it.id}
+                          className="suggestion"
+                          role="option"
+                          data-type={it.media_type}
+                          data-id={it.id}
+                          aria-selected={idx === selectedIndex}
+                          onClick={() => {
+                            addItem(it.media_type, it.id);
+                            setSuggestions([]);
+                            setSearchValue('');
+                          }}
+                        >
+                          <img src={imgUrl(it.poster_path, 'w154') || 'https://via.placeholder.com/46x68?text=No+Image'} alt="" loading="lazy" />
+                          <div className="meta">
+                            <div style={{ fontWeight: 700 }}>{it.title || it.name || 'Без названия'}</div>
+                            <div className="pill">{(it.release_date || it.first_air_date || '').slice(0, 4) || ''}</div>
+                          </div>
+                          <div className="pill">{it.media_type}</div>
                         </div>
-                        <div className="pill">{it.media_type}</div>
-                      </div>
-                    ))}
+                      ))
+                    )}
                   </div>
                 </div>
               )}
@@ -467,12 +499,20 @@
             <div className="container">
               <div className="loader-container">
                 {isLoading && <div className="loader"></div>}
-                {!isLoading && (
+                {!isLoading && error && (
+                  <div className="card wide">
+                    <div className="content">
+                      <h3 style={{ margin: '6px 0 6px' }}>Ошибка</h3>
+                      <p className="subtitle">{error}</p>
+                    </div>
+                  </div>
+                )}
+                {!isLoading && !error && (
                   order.length === 0 ? (
                     <div className="card wide">
                       <div className="content">
-                        <h3 style={{ margin: '6px 0 6px' }}>Your list is empty</h3>
-                        <p className="subtitle">Search above and click a result to add a movie or TV show.</p>
+                        <h3 style={{ margin: '6px 0 6px' }}>Ваш список пуст</h3>
+                        <p className="subtitle">Используйте поиск выше, чтобы добавить фильм или шоу.</p>
                       </div>
                     </div>
                   ) : (
@@ -483,7 +523,7 @@
                       allowDrag={allowedDevice}
                       lockAxis="y"
                     >
-                      {order.map((key) => (
+                      {order.map((key, index) => (
                         <SortableItem key={key}>
                           <Card
                             m={items[key]}
