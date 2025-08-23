@@ -95,10 +95,11 @@
       display: flex;
       flex-direction: column;
     }
-    .card.youtube { grid-column: span 6; } /* Adjusted span for YouTube videos */
+    .card.youtube { grid-column: span 6; } /* Wider span for YouTube videos */
     .card.wide { grid-column: span 6 }
     @media (max-width: 640px) { .card, .card.wide, .card.youtube { grid-column: span 4 } }
-    .poster { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: #0b1220 } /* Changed to 16:9 for YouTube */
+    .poster { width: 100%; aspect-ratio: 3 / 4.2; object-fit: cover; background: #0b1220 } /* Default to TMDB aspect ratio */
+    .poster.youtube { aspect-ratio: 16 / 9; } /* YouTube-specific aspect ratio */
     .content { padding: 12px 14px 16px; flex: 0 0 auto; }
     .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 6px 0 }
     .description {
@@ -194,7 +195,6 @@
       </div>
       <div class="searchbar searchbar-hidden" id="searchbar" role="combobox" aria-expanded="false" aria-owns="suggestion-list">
         <input id="search" type="text" placeholder="Search for a film or show…" autocomplete="off" aria-autocomplete="list" aria-controls="suggestion-list" />
-        <!-- Removed .kbd span -->
         <button class="add-btn searchbar-hidden" id="add-video">+</button>
         <div id="suggestions" class="suggestions" role="listbox" aria-label="Search suggestions"></div>
       </div>
@@ -442,7 +442,7 @@
       const description = m.overview ? `<p class="description">${esc(m.overview)}</p>` : '';
       const isYouTube = m.youtubeUrl;
       return `<article class="card${isYouTube ? ' youtube' : ''}" data-key="${esc(key)}">
-        <img class="poster" src="${esc(poster)}" alt="Poster for ${esc(title)}" loading="lazy" />
+        <img class="poster${isYouTube ? ' youtube' : ''}" src="${esc(poster)}" alt="Poster for ${esc(title)}" loading="lazy" />
         <div class="content">
           <h3 style="margin:0 0 6px">${esc(title)} ${!isYouTube && year ? `<span class=\"pill\" style=\"margin-left:6px\">${esc(year)}</span>` : ''}</h3>
           ${!isYouTube ? `<div class="row">${genres}</div>${description}` : ''}
