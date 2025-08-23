@@ -25,6 +25,7 @@
     body {
       margin: 0;
       font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      /* Darker gradient + faster animation */
       background: linear-gradient(-45deg, #0f172a, #1e293b, #111827, #0b0c0f);
       background-size: 400% 400%;
       background-attachment: fixed;
@@ -63,8 +64,7 @@
       align-items: start;
     }
     @media (max-width: 900px) { .list { grid-template-columns: repeat(6, 1fr) } }
-    @media (max-width: 640px) { .list威力 0.5s ease-in-out; } 
-    .list.sortable { touch-action: none; }
+    @media (max-width: 640px) { .list { grid-template-columns: repeat(4, 1fr) } }
     .card {
       grid-column: span 4;
       background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0)), var(--card);
@@ -157,7 +157,54 @@
   </style>
 </head>
 <body>
-  <div id="root"></div>
+  <header>
+    <div class="container">
+      <div class="title">
+        <div style="font-size:26px">🎬</div>
+        <div>
+          <h1>Список шедевров</h1>
+          <p class="subtitle">Добро пожаловать на список не проходняков, составленный Леонидом</p>
+        </div>
+      </div>
+      <div class="searchbar" id="searchbar" role="combobox" aria-expanded="false" aria-owns="suggestion-list">
+        <input id="search" type="text" placeholder="Search for a film or show…" autocomplete="off" aria-autocomplete="list" aria-controls="suggestion-list" />
+        <span class="kbd">Enter ↵</span>
+        <div id="suggestions" class="suggestions" role="listbox" aria-label="Search suggestions"></div>
+      </div>
+    </div>
+  </header>
+  <main>
+    <div class="container">
+      <div class="loader-container">
+        <div id="loader" class="loader"></div>
+        <div id="list" class="list loading" aria-live="polite"></div>
+      </div>
+    </div>
+  </main>
+  <footer>
+    <div class="container">
+      Data from TMDb (The Movie Database). This product uses the TMDb API but is not endorsed or certified by TMDb.
+    </div>
+  </footer>
+  <div id="modal" class="modal">
+    <div class="modal-content">
+      <p>Вы уверены, что хотите удалить <strong id="modal-title"></strong>?</p>
+      <div class="modal-actions">
+        <button class="btn btn-danger" id="confirm-delete">Да</button>
+        <button class="btn btn-ghost" id="cancel-delete">Нет</button>
+      </div>
+    </div>
+  </div>
+  <div id="edit-modal" class="modal">
+    <div class="edit-modal-content">
+      <h3>Редактировать ссылку на трейлер</h3>
+      <input type="text" id="trailer-link-input" placeholder="Введите URL трейлера" />
+      <div class="edit-actions">
+        <button class="btn btn-danger" id="save-trailer">Сохранить</button>
+        <button class="btn btn-ghost" id="cancel-edit">Отмена</button>
+      </div>
+    </div>
+  </div>
   <script type="module">
     'use strict'
     const TMDB_API_KEY = "166bdfecdc09d46826d8662b9627ad27";
@@ -169,10 +216,7 @@
 
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
     import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
-    import React, { useState, useEffect, useRef, useCallback } from 'https://esm.sh/react@18';
-    import ReactDOM from 'https://esm.sh/react-dom@18';
-    import SortableList, { SortableItem } from 'https://esm.sh/react-easy-sort';
-    import { arrayMoveImmutable } from 'https://esm.sh/array-move';
+    import * as interact from 'https://cdn.jsdelivr.net/npm/interactjs@latest/dist/interact.min.js';
 
     const firebaseConfig = {
       apiKey: "AIzaSyDu8R38EkqOxBDkcgfnYf5mBTCosQsOoGA",
@@ -187,6 +231,39 @@
     const app = initializeApp(firebaseConfig);
     const database = getDatabase(app);
 
+    const state = {
+      items: {},
+      order: [],
+      selectedIndex: -1,
+      suggestions: [],
+    };
+
+    // Flags to stabilize order sync across devices
+    let isDragging = false;
+    let suppressRemote = false;
+    let localUpdatedAt = 0;
+
+    const $ = (sel, ctx=document) => ctx.querySelector(sel);
+    const $$ = (sel, ctx=document) => [...ctx.querySelectorAll(sel)];
+    const esc = (s="") => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
+    const debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t=setTimeout(() => fn(...a), ms); }; };
+
+    const el = {
+      searchbar: $('#searchbar'),
+      search: $('#search'),
+      suggestions: $('#suggestions'),
+      list: $('#list'),
+      loader: $('#loader'),
+      modal: $('#modal'),
+      modalTitle: $('#modal-title'),
+      confirmDelete: $('#confirm-delete'),
+      cancelDelete: $('#cancel-delete'),
+      editModal: $('#edit-modal'),
+      trailerInput: $('#trailer-link-input'),
+      saveTrailer: $('#save-trailer'),
+      cancelEdit: $('#cancel-edit'),
+    };
+
     function getDeviceId() {
       let deviceId = localStorage.getItem('deviceId');
       if (!deviceId) {
@@ -197,6 +274,9 @@
       }
       return deviceId + '|' + navigator.userAgent;
     }
+
+    const allowedDevice = getDeviceId() === ALLOWED_DEVICE_ID;
+    if (allowedDevice) el.list.classList.add('sortable');
 
     function apiUrl(path, params = {}) {
       const base = new URL('https://api.themoviedb.org/3' + path);
@@ -236,14 +316,8 @@
 
     async function fetchDetails(type, id) {
       const url = apiUrl(`/${type}/${id}`, { append_to_response: 'videos' });
-      try {
-        const res = await fetch(url);
-        if (!res.ok) throw new Error('Failed to fetch details');
-        return await res.json();
-      } catch (e) {
-        console.warn('TMDb details error:', e);
-        return null;
-      }
+      const res = await fetch(url);
+      return await res.json();
     }
 
     function bestTrailerUrl(details) {
@@ -254,369 +328,313 @@
       return pick ? `https://www.youtube.com/watch?v=${pick.key}` : '';
     }
 
-    function debounce(fn, ms) {
-      let t;
-      return (...a) => {
-        clearTimeout(t);
-        t = setTimeout(() => fn(...a), ms);
-      };
+    function save() {
+      const payload = { items: state.items, order: state.order, updatedAt: Date.now(), device: getDeviceId() };
+      localUpdatedAt = payload.updatedAt;
+      suppressRemote = true;
+      setTimeout(() => { suppressRemote = false; }, 800);
+      set(ref(database, 'tmdbList'), payload)
+        .catch(err => console.error('Ошибка сохранения:', err));
     }
 
-    const Card = ({ m, keyProp, allowedDevice, onDelete, onEdit, onTrailer }) => {
-      if (!m) return null;
-      const poster = imgUrl(m.poster_path, 'w500') || 'https://via.placeholder.com/300x420?text=No+Poster';
-      const title = m.title || m.name || 'Без названия';
-      const year = (m.release_date || m.first_air_date || '').slice(0, 4) || '';
-      const genres = (m.genres || []).slice(0, 3).map(g => <span key={g.id} className="pill">{g.name}</span>);
-      const rating = (m.vote_average && m.vote_count > 0) ? `⭐${m.vote_average.toFixed(1)}` : '';
-      const runtime = m.runtime ? `${m.runtime} min` : (Array.isArray(m.episode_run_time) && m.episode_run_time[0] ? `${m.episode_run_time[0]} min` : '');
-      const description = m.overview ? <p className="description">{m.overview}</p> : null;
-      return (
-        <article className="card" data-key={keyProp} aria-grabbed="false">
-          <img className="poster" src={poster} alt={`Poster for ${title}`} loading="lazy" />
-          <div className="content">
-            <h3 style={{ margin: '0 0 6px' }}>{title} {year ? <span className="pill" style={{ marginLeft: '6px' }}>{year}</span> : null}</h3>
-            <div className="row">{genres}</div>
-            {description}
-          </div>
-          <div className="actions">
-            <div className="row" style={{ gap: '8px' }}>
-              {rating ? <span className="pill">{rating}</span> : null}
-              {runtime ? <span className="pill">{runtime}</span> : null}
-              <span className="pill">{m.media_type.toUpperCase()}</span>
-            </div>
-            <div className="row" style={{ gap: '8px' }}>
-              <a className="btn-ghost" href="#" onClick={(e) => { e.preventDefault(); onTrailer(); }} rel="noreferrer">Трейлер</a>
-              <button className="btn-ghost" onClick={onDelete} title="Удалить">Удалить</button>
-              {allowedDevice ? <button className="btn-ghost" onClick={onEdit} title="Редактировать трейлер">⚙️</button> : null}
-            </div>
-          </div>
-        </article>
-      );
-    };
+    function subscribe() {
+      onValue(ref(database, 'tmdbList'), (snapshot) => {
+        const data = snapshot.val();
+        if (!data) return;
+        // Ignore remote echoes while dragging or just after local save
+        if (isDragging || suppressRemote) return;
+        if ((data.updatedAt ?? 0) < localUpdatedAt) return;
 
-    const App = () => {
-      const [items, setItems] = useState({});
-      const [order, setOrder] = useState([]);
-      const [suggestions, setSuggestions] = useState([]);
-      const [selectedIndex, setSelectedIndex] = useState(-1);
-      const [isLoading, setIsLoading] = useState(true);
-      const [searchValue, setSearchValue] = useState('');
-      const [showDeleteModal, setShowDeleteModal] = useState(false);
-      const [deleteKey, setDeleteKey] = useState(null);
-      const [deleteTitle, setDeleteTitle] = useState('');
-      const [showEditModal, setShowEditModal] = useState(false);
-      const [editKey, setEditKey] = useState(null);
-      const [trailerValue, setTrailerValue] = useState('');
-      const [error, setError] = useState(null);
-      const deviceId = getDeviceId();
-      const allowedDevice = deviceId === ALLOWED_DEVICE_ID;
-      const localUpdatedAtRef = useRef(0);
-      const suppressRemoteRef = useRef(false);
-      const isDraggingRef = useRef(false);
-      const searchbarRef = useRef(null);
+        state.items = data.items || {};
+        state.order = data.order || [];
+        for (const k of Object.keys(state.items)) {
+          const m = state.items[k];
+          if (!m.customTrailerUrl) m.customTrailerUrl = bestTrailerUrl(m) || '';
+        }
+        renderList();
+      }, (error) => console.error('Ошибка загрузки:', error));
+    }
 
-      const doSearch = useCallback(debounce(async (q) => {
-        if (!q) {
-          setSuggestions([]);
+    function openSuggestions(items) {
+      state.suggestions = items;
+      el.suggestions.innerHTML = items.map((it, idx) => {
+        const title = it.title || it.name || '';
+        const year = (it.release_date || it.first_air_date || '').slice(0,4);
+        const poster = it.poster_path ? imgUrl(it.poster_path, 'w154') : '';
+        return `<div class="suggestion" role="option" data-type="${esc(it.media_type)}" data-id="${esc(it.id)}" aria-selected="${idx===state.selectedIndex}">
+          <img src="${esc(poster)}" alt="" loading="lazy" />
+          <div class="meta">
+            <div style="font-weight:700">${esc(title)}</div>
+            <div class="pill">${esc(year||'')}</div>
+          </div>
+          <div class="pill">${esc(it.media_type)}</div>
+        </div>`;
+      }).join('');
+      el.suggestions.classList.add('open');
+      el.searchbar.setAttribute('aria-expanded', 'true');
+    }
+
+    function closeSuggestions() {
+      el.suggestions.classList.remove('open');
+      el.searchbar.setAttribute('aria-expanded', 'false');
+      state.selectedIndex = -1; state.suggestions = [];
+    }
+
+    function cardTemplate(m, key) {
+      const poster = m.poster_path ? imgUrl(m.poster_path, 'w500') : '';
+      const title = m.title || m.name || '';
+      const year = (m.release_date || m.first_air_date || '').slice(0,4) || '';
+      const genres = (m.genres||[]).slice(0,3).map(g=>`<span class="pill">${esc(g.name)}</span>`).join('');
+      const rating = (m.vote_average && m.vote_count>0) ? `⭐${Number(m.vote_average).toFixed(1)}` : '';
+      const runtime = (m.runtime ? `${m.runtime} min` : (Array.isArray(m.episode_run_time) && m.episode_run_time[0]) ? `${m.episode_run_time[0]} min` : '');
+      const description = m.overview ? `<p class="description">${esc(m.overview)}</p>` : '';
+      return `<article class="card" data-key="${esc(key)}" aria-grabbed="false">
+        <img class="poster" src="${esc(poster)}" alt="Poster for ${esc(title)}" loading="lazy" />
+        <div class="content">
+          <h3 style="margin:0 0 6px">${esc(title)} ${year ? `<span class=\"pill\" style=\"margin-left:6px\">${esc(year)}</span>` : ''}</h3>
+          <div class="row">${genres}</div>
+          ${description}
+        </div>
+        <div class="actions">
+          <div class="row" style="gap:8px">
+            ${rating ? `<span class="pill">${esc(rating)}</span>` : ''}
+            ${runtime ? `<span class="pill">${esc(runtime)}</span>` : ''}
+            <span class="pill">${esc(m.media_type.toUpperCase())}</span>
+          </div>
+          <div class="row" style="gap:8px">
+            <a class="btn-ghost" href="#" data-trailer="${esc(key)}" rel="noreferrer">Трейлер</a>
+            <button class="btn-ghost" data-remove="${esc(key)}" title="Удалить">Удалить</button>
+            ${allowedDevice ? `<button class="btn-ghost" data-edit="${esc(key)}" title="Редактировать трейлер">⚙️</button>` : ''}
+          </div>
+        </div>
+      </article>`;
+    }
+
+    function renderList() {
+      el.list.classList.remove('loading');
+      el.loader.style.display = 'none';
+      if (!state.order.length) {
+        el.list.innerHTML = `<div class="card wide"><div class="content"><h3 style="margin:6px 0 6px">Your list is empty</h3><p class="subtitle">Search above and click a result to add a movie or TV show.</p></div></div>`;
+        return;
+      }
+      el.list.innerHTML = state.order.map(key => cardTemplate(state.items[key], key)).join('');
+      // Re-init DnD after re-render
+      initCustomDnD();
+    }
+
+    async function addItem(type, id) {
+      const key = `${type}_${id}`;
+      if (state.items[key]) return;
+      const m = await fetchDetails(type, id);
+      if (m && !m.status_code) {
+        m.media_type = type;
+        m.customTrailerUrl = await searchYouTubeTrailer(m.title || m.name || '') || bestTrailerUrl(m) || '';
+        state.items[key] = m;
+        state.order.unshift(key);
+        save();
+        renderList();
+      }
+    }
+
+    function openConfirmModal(title, key, card) {
+      el.modalTitle.textContent = title;
+      el.modal.style.display = 'flex';
+      const close = () => { el.modal.style.display = 'none'; cleanup(); };
+      const cleanup = () => {
+        el.confirmDelete.removeEventListener('click', confirmHandler);
+        el.cancelDelete.removeEventListener('click', close);
+        el.modal.removeEventListener('click', backdrop);
+      };
+      const confirmHandler = () => {
+        if (card) {
+          card.classList.add('removing');
+          setTimeout(() => {
+            delete state.items[key];
+            state.order = state.order.filter(x => x !== key);
+            save();
+            renderList();
+          }, 500);
+        } else {
+          delete state.items[key];
+          state.order = state.order.filter(x => x !== key);
+          save();
+          renderList();
+        }
+        close();
+      };
+      const backdrop = (e) => { if (e.target === el.modal) close(); };
+      el.confirmDelete.addEventListener('click', confirmHandler, { once: true });
+      el.cancelDelete.addEventListener('click', close);
+      el.modal.addEventListener('click', backdrop);
+    }
+
+    function openEditModal(currentUrl, onSave) {
+      el.trailerInput.value = currentUrl || '';
+      el.editModal.style.display = 'flex';
+      const close = () => { el.editModal.style.display = 'none'; cleanup(); };
+      const cleanup = () => {
+        el.saveTrailer.removeEventListener('click', saveHandler);
+        el.cancelEdit.removeEventListener('click', close);
+        el.editModal.removeEventListener('click', backdrop);
+      };
+      const saveHandler = () => { onSave(el.trailerInput.value.trim()); close(); };
+      const backdrop = (e) => { if (e.target === el.editModal) close(); };
+      el.saveTrailer.addEventListener('click', saveHandler, { once: true });
+      el.cancelEdit.addEventListener('click', close);
+      el.editModal.addEventListener('click', backdrop);
+    }
+
+    const doSearch = debounce(async () => {
+      const q = el.search.value.trim();
+      if (!q) { closeSuggestions(); return; }
+      const data = await searchMulti(q);
+      if (!data || data.Error) {
+        el.suggestions.innerHTML = `<div class="suggestion" aria-disabled="true">${esc(data?.Error || 'No results')}</div>`;
+        el.suggestions.classList.add('open');
+        return;
+      }
+      openSuggestions(data.results);
+    }, SEARCH_DELAY_MS);
+
+    function highlight() {
+      $$('.suggestion', el.suggestions).forEach((n, i) => n.setAttribute('aria-selected', String(i===state.selectedIndex)));
+    }
+
+    // Stable DnD for the allowed device
+    function initCustomDnD() {
+      if (!allowedDevice) return;
+      const container = el.list;
+
+      interact('.card').draggable({
+        ignoreFrom: '.btn-ghost, button',
+        listeners: {
+          start(event) {
+            isDragging = true;
+            const target = event.target;
+            target.classList.add('dragging');
+            target.setAttribute('aria-grabbed', 'true');
+            document.body.classList.add('noselect');
+          },
+          move(event) {
+            // smooth visual drag with transform
+            const x = (parseFloat(event.target.getAttribute('data-x')) || 0) + event.dx;
+            const y = (parseFloat(event.target.getAttribute('data-y')) || 0) + event.dy;
+            event.target.style.transform = `translate(${x}px, ${y}px)`;
+            event.target.setAttribute('data-x', x);
+            event.target.setAttribute('data-y', y);
+          },
+          end(event) {
+            const target = event.target;
+            // compute drop position by pointer Y
+            const pointerY = event.clientY;
+            const dragKey = target.getAttribute('data-key');
+
+            const cards = $$('.card', container).filter(c => c !== target);
+            let dropIndex = cards.length;
+            for (let i = 0; i < cards.length; i++) {
+              const rect = cards[i].getBoundingClientRect();
+              const centerY = rect.top + rect.height / 2;
+              if (pointerY < centerY) { dropIndex = i; break; }
+            }
+
+            const newOrder = state.order.filter(k => k !== dragKey);
+            // map cards -> keys to translate visual index to order index
+            const keysInDomOrder = cards.map(c => c.getAttribute('data-key'));
+            // translate dropIndex from DOM list to order position
+            const beforeKey = keysInDomOrder[dropIndex];
+            const orderIndex = beforeKey ? newOrder.indexOf(beforeKey) : newOrder.length;
+            newOrder.splice(orderIndex, 0, dragKey);
+            state.order = newOrder;
+
+            // cleanup visuals
+            target.classList.remove('dragging');
+            target.setAttribute('aria-grabbed', 'false');
+            document.body.classList.remove('noselect');
+            target.style.transform = '';
+            target.removeAttribute('data-x');
+            target.removeAttribute('data-y');
+
+            save();
+            renderList();
+            // small delay to avoid applying remote echo
+            setTimeout(() => { isDragging = false; }, 100);
+          },
+        },
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      if (!allowedDevice) {
+        el.searchbar.style.display = 'none';
+      } else {
+        el.search.addEventListener('input', doSearch);
+        el.search.addEventListener('keydown', (e) => {
+          if (!el.suggestions.classList.contains('open')) return;
+          const max = state.suggestions.length - 1;
+          if (e.key === 'ArrowDown') { e.preventDefault(); state.selectedIndex = Math.min(max, state.selectedIndex + 1); highlight(); }
+          else if (e.key === 'ArrowUp') { e.preventDefault(); state.selectedIndex = Math.max(0, state.selectedIndex - 1); highlight(); }
+          else if (e.key === 'Enter') {
+            if (state.selectedIndex >= 0) {
+              const sel = state.suggestions[state.selectedIndex]; if (sel) addItem(sel.media_type, sel.id);
+            } else if (state.suggestions[0]) {
+              const sel = state.suggestions[0]; addItem(sel.media_type, sel.id);
+            }
+            closeSuggestions();
+            el.search.select();
+          } else if (e.key === 'Escape') { closeSuggestions(); }
+        });
+        el.suggestions.addEventListener('click', (e) => {
+          const item = e.target.closest('.suggestion');
+          if (!item) return;
+          const id = item.getAttribute('data-id');
+          const type = item.getAttribute('data-type');
+          if (id && type) { addItem(type, id); closeSuggestions(); el.search.select(); }
+        });
+        document.addEventListener('click', (e) => {
+          if (!el.searchbar.contains(e.target)) closeSuggestions();
+        });
+      }
+
+      el.list.addEventListener('click', async (e) => {
+        const delBtn = e.target.closest('[data-remove]');
+        const editBtn = e.target.closest('[data-edit]');
+        const trailerLink = e.target.closest('[data-trailer]');
+        if (delBtn) {
+          const key = delBtn.getAttribute('data-remove');
+          const m = state.items[key];
+          if (!m) return;
+          const title = m.title || m.name || 'Неизвестное произведение';
+          const card = el.list.querySelector(`.card[data-key="${key}"]`);
+          openConfirmModal(title, key, card);
           return;
         }
-        try {
-          const data = await searchMulti(q);
-          if (data.Error) {
-            setSuggestions([]);
-            setError(data.Error);
-            return;
-          }
-          setSuggestions(data.results || []);
-          setSelectedIndex(-1);
-          setError(null);
-        } catch (e) {
-          setSuggestions([]);
-          setError('Ошибка поиска');
+        if (editBtn && allowedDevice) {
+          const key = editBtn.getAttribute('data-edit');
+          const m = state.items[key];
+          if (!m) return;
+          openEditModal(m.customTrailerUrl || '', (val) => {
+            m.customTrailerUrl = val || '';
+            save();
+            renderList();
+          });
+          return;
         }
-      }, SEARCH_DELAY_MS), []);
-
-      const save = () => {
-        const payload = { items, order, updatedAt: Date.now(), device: deviceId };
-        localUpdatedAtRef.current = payload.updatedAt;
-        suppressRemoteRef.current = true;
-        setTimeout(() => { suppressRemoteRef.current = false; }, 800);
-        set(ref(database, 'tmdbList'), payload).catch(err => {
-          console.error('Ошибка сохранения:', err);
-          setError('Ошибка сохранения данных');
-        });
-      };
-
-      useEffect(() => {
-        const unsubscribe = onValue(ref(database, 'tmdbList'), (snapshot) => {
-          const data = snapshot.val();
-          if (!data) {
-            setIsLoading(false);
-            setError('Нет данных в базе');
-            return;
-          }
-          if (isDraggingRef.current || suppressRemoteRef.current) return;
-          if (data.updatedAt < localUpdatedAtRef.current) return;
-          const newItems = data.items || {};
-          for (const k in newItems) {
-            const m = newItems[k];
-            if (!m.customTrailerUrl) m.customTrailerUrl = bestTrailerUrl(m) || '';
-          }
-          setItems(newItems);
-          setOrder(data.order || []);
-          setIsLoading(false);
-          setError(null);
-        }, (error) => {
-          console.error('Ошибка загрузки:', error);
-          setError('Ошибка загрузки данных');
-          setIsLoading(false);
-        });
-        return unsubscribe;
-      }, []);
-
-      useEffect(() => {
-        const handleClickOutside = (e) => {
-          if (searchbarRef.current && !searchbarRef.current.contains(e.target)) {
-            setSuggestions([]);
-          }
-        };
-        document.addEventListener('click', handleClickOutside);
-        return () => document.removeEventListener('click', handleClickOutside);
-      }, []);
-
-      const addItem = async (type, id) => {
-        const key = `${type}_${id}`;
-        if (items[key]) return;
-        const m = await fetchDetails(type, id);
-        if (m && !m.status_code) {
-          m.media_type = type;
-          m.customTrailerUrl = await searchYouTubeTrailer(m.title || m.name || '') || bestTrailerUrl(m) || '';
-          setItems(prev => ({ ...prev, [key]: m }));
-          setOrder(prev => [key, ...prev]);
-          save();
-        } else {
-          setError('Не удалось добавить элемент');
-        }
-      };
-
-      const handleSortEnd = (oldIndex, newIndex) => {
-        isDraggingRef.current = true;
-        const newOrder = arrayMoveImmutable(order, oldIndex, newIndex);
-        setOrder(newOrder);
-        save();
-        setTimeout(() => { isDraggingRef.current = false; }, 100);
-      };
-
-      const handleSearchChange = (e) => {
-        setSearchValue(e.target.value);
-        doSearch(e.target.value.trim());
-      };
-
-      const handleSearchKeyDown = (e) => {
-        if (suggestions.length === 0) return;
-        const max = suggestions.length - 1;
-        if (e.key === 'ArrowDown') {
+        if (trailerLink) {
           e.preventDefault();
-          setSelectedIndex(Math.min(max, selectedIndex + 1));
-        } else if (e.key === 'ArrowUp') {
-          e.preventDefault();
-          setSelectedIndex(Math.max(-1, selectedIndex - 1));
-        } else if (e.key === 'Enter') {
-          let sel;
-          if (selectedIndex >= 0) {
-            sel = suggestions[selectedIndex];
-          } else if (suggestions[0]) {
-            sel = suggestions[0];
-          }
-          if (sel) {
-            addItem(sel.media_type, sel.id);
-            setSuggestions([]);
-            setSearchValue('');
-          }
-        } else if (e.key === 'Escape') {
-          setSuggestions([]);
+          const key = trailerLink.getAttribute('data-trailer');
+          const m = state.items[key];
+          if (!m) return;
+          const title = m.title || m.name || '';
+          let url = m.customTrailerUrl || bestTrailerUrl(m);
+          if (!url) url = await searchYouTubeTrailer(title);
+          if (url) window.open(url, '_blank');
+          else alert('Трейлер не найден.');
         }
-      };
+      });
 
-      return (
-        <>
-          <header>
-            <div className="container">
-              <div className="title">
-                <div style={{ fontSize: '26px' }}>🎬</div>
-                <div>
-                  <h1>Список шедевров</h1>
-                  <p className="subtitle">Добро пожаловать на список не проходняков, составленный Леонидом</p>
-                </div>
-              </div>
-              {allowedDevice && (
-                <div className="searchbar" role="combobox" aria-expanded={suggestions.length > 0} aria-owns="suggestion-list" ref={searchbarRef}>
-                  <input
-                    type="text"
-                    placeholder="Search for a film or show…"
-                    autoComplete="off"
-                    aria-autocomplete="list"
-                    aria-controls="suggestion-list"
-                    value={searchValue}
-                    onChange={handleSearchChange}
-                    onKeyDown={handleSearchKeyDown}
-                  />
-                  <span className="kbd">Enter ↵</span>
-                  <div className={`suggestions ${suggestions.length > 0 ? 'open' : ''}`} role="listbox" aria-label="Search suggestions">
-                    {suggestions.length === 0 && searchValue && !error ? (
-                      <div className="suggestion" aria-disabled="true">Нет результатов</div>
-                    ) : (
-                      suggestions.map((it, idx) => (
-                        <div
-                          key={it.id}
-                          className="suggestion"
-                          role="option"
-                          data-type={it.media_type}
-                          data-id={it.id}
-                          aria-selected={idx === selectedIndex}
-                          onClick={() => {
-                            addItem(it.media_type, it.id);
-                            setSuggestions([]);
-                            setSearchValue('');
-                          }}
-                        >
-                          <img src={imgUrl(it.poster_path, 'w154') || 'https://via.placeholder.com/46x68?text=No+Image'} alt="" loading="lazy" />
-                          <div className="meta">
-                            <div style={{ fontWeight: 700 }}>{it.title || it.name || 'Без названия'}</div>
-                            <div className="pill">{(it.release_date || it.first_air_date || '').slice(0, 4) || ''}</div>
-                          </div>
-                          <div className="pill">{it.media_type}</div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          </header>
-          <main>
-            <div className="container">
-              <div className="loader-container">
-                {isLoading && <div className="loader"></div>}
-                {!isLoading && error && (
-                  <div className="card wide">
-                    <div className="content">
-                      <h3 style={{ margin: '6px 0 6px' }}>Ошибка</h3>
-                      <p className="subtitle">{error}</p>
-                    </div>
-                  </div>
-                )}
-                {!isLoading && !error && (
-                  order.length === 0 ? (
-                    <div className="card wide">
-                      <div className="content">
-                        <h3 style={{ margin: '6px 0 6px' }}>Ваш список пуст</h3>
-                        <p className="subtitle">Используйте поиск выше, чтобы добавить фильм или шоу.</p>
-                      </div>
-                    </div>
-                  ) : (
-                    <SortableList
-                      onSortEnd={handleSortEnd}
-                      className={`list ${allowedDevice ? 'sortable' : ''}`}
-                      draggedItemClassName="dragging"
-                      allowDrag={allowedDevice}
-                      lockAxis="y"
-                    >
-                      {order.map((key, index) => (
-                        <SortableItem key={key}>
-                          <Card
-                            m={items[key]}
-                            keyProp={key}
-                            allowedDevice={allowedDevice}
-                            onDelete={() => {
-                              setDeleteKey(key);
-                              setDeleteTitle(items[key]?.title || items[key]?.name || 'Неизвестное произведение');
-                              setShowDeleteModal(true);
-                            }}
-                            onEdit={() => {
-                              setEditKey(key);
-                              setTrailerValue(items[key]?.customTrailerUrl || '');
-                              setShowEditModal(true);
-                            }}
-                            onTrailer={async () => {
-                              const m = items[key];
-                              if (!m) return;
-                              const title = m.title || m.name || '';
-                              let url = m.customTrailerUrl || bestTrailerUrl(m);
-                              if (!url) url = await searchYouTubeTrailer(title);
-                              if (url) window.open(url, '_blank');
-                              else alert('Трейлер не найден.');
-                            }}
-                          />
-                        </SortableItem>
-                      ))}
-                    </SortableList>
-                  )
-                )}
-              </div>
-            </div>
-          </main>
-          <footer>
-            <div className="container">
-              Data from TMDb (The Movie Database). This product uses the TMDb API but is not endorsed or certified by TMDb.
-            </div>
-          </footer>
-          {showDeleteModal && (
-            <div className="modal" style={{ display: 'flex' }} onClick={(e) => { if (e.target.className === 'modal') setShowDeleteModal(false); }}>
-              <div className="modal-content">
-                <p>Вы уверены, что хотите удалить <strong>{deleteTitle}</strong>?</p>
-                <div className="modal-actions">
-                  <button
-                    className="btn btn-danger"
-                    onClick={() => {
-                      setItems((prev) => { const n = { ...prev }; delete n[deleteKey]; return n; });
-                      setOrder((prev) => prev.filter((x) => x !== deleteKey));
-                      save();
-                      setShowDeleteModal(false);
-                    }}
-                  >
-                    Да
-                  </button>
-                  <button className="btn btn-ghost" onClick={() => setShowDeleteModal(false)}>Нет</button>
-                </div>
-              </div>
-            </div>
-          )}
-          {showEditModal && (
-            <div className="modal" style={{ display: 'flex' }} onClick={(e) => { if (e.target.className === 'modal') setShowEditModal(false); }}>
-              <div className="edit-modal-content">
-                <h3>Редактировать ссылку на трейлер</h3>
-                <input
-                  type="text"
-                  value={trailerValue}
-                  onChange={(e) => setTrailerValue(e.target.value)}
-                  placeholder="Введите URL трейлера"
-                />
-                <div className="edit-actions">
-                  <button
-                    className="btn btn-danger"
-                    onClick={() => {
-                      setItems((prev) => ({
-                        ...prev,
-                        [editKey]: { ...prev[editKey], customTrailerUrl: trailerValue.trim() },
-                      }));
-                      save();
-                      setShowEditModal(false);
-                    }}
-                  >
-                    Сохранить
-                  </button>
-                  <button className="btn btn-ghost" onClick={() => setShowEditModal(false)}>Отмена</button>
-                </div>
-              </div>
-            </div>
-          )}
-        </>
-      );
-    };
-
-    ReactDOM.render(<App />, document.getElementById('root'));
+      subscribe();
+      initCustomDnD();
+    });
   </script>
 </body>
 </html>
