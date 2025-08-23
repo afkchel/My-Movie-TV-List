@@ -62,11 +62,14 @@
     .title { display: flex; gap: 12px; align-items: center }
     .title h1 { margin: 0; font-weight: 800; letter-spacing: .2px; font-size: clamp(22px, 5vw, 30px) }
     .subtitle { margin: 6px 0 0; color: var(--muted); font-size: 14px }
-    .searchbar { position: relative; margin-top: 14px }
-    .searchbar.searchbar-hidden { display: none; } /* New class to hide search bar */
+    .searchbar { position: relative; margin-top: 14px; display: flex; gap: 8px; align-items: center }
+    .searchbar.searchbar-hidden { display: none; }
     .searchbar input[type="text"] { width: 100%; padding: 14px 48px 14px 16px; border-radius: 14px; background: var(--panel); color: var(--text); border: 1px solid #1f2937; outline: none; font-size: 16px; box-shadow: inset 0 1px 0 rgba(255,255,255,.02), var(--shadow) }
     .searchbar input:focus { border-color: var(--accent-2); box-shadow: 0 0 0 4px rgba(147,197,253,.12), var(--shadow) }
     .searchbar .kbd { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font: 16px/1 monospace; color: var(--muted); opacity: .9 }
+    .searchbar .add-btn { padding: 14px; border-radius: 14px; background: #111827; border: 1px solid #2b3443; color: var(--text); font-size: 16px; font-weight: 600; cursor: pointer; box-shadow: var(--shadow); height: 100%; display: flex; align-items: center; justify-content: center }
+    .searchbar .add-btn:hover { background: #0f172a; border-color: #3b475a }
+    .searchbar .add-btn.searchbar-hidden { display: none; }
     .suggestions { position: absolute; inset: auto 0 0 0; transform: translateY(100%); background: var(--panel); border: 1px solid #1f2937; border-radius: 12px; margin-top: 8px; max-height: 60dvh; overflow: auto; box-shadow: var(--shadow); display: none; z-index: 100 }
     .suggestions.open { display: block }
     .suggestion { display: grid; grid-template-columns: 46px 1fr auto; gap: 12px; align-items: center; padding: 10px 12px; cursor: pointer }
@@ -189,9 +192,10 @@
           <p class="subtitle">Добро пожаловать на список не проходняков, составленный Леонидом</p>
         </div>
       </div>
-      <div class="searchbar searchbar-hidden" id="searchbar" role="combobox" aria-expanded="false" aria-owns="suggestion-list"> <!-- Added searchbar-hidden class -->
+      <div class="searchbar searchbar-hidden" id="searchbar" role="combobox" aria-expanded="false" aria-owns="suggestion-list">
         <input id="search" type="text" placeholder="Search for a film or show…" autocomplete="off" aria-autocomplete="list" aria-controls="suggestion-list" />
         <span class="kbd">Enter ↵</span>
+        <button class="add-btn searchbar-hidden" id="add-video">+</button>
         <div id="suggestions" class="suggestions" role="listbox" aria-label="Search suggestions"></div>
       </div>
     </div>
@@ -225,6 +229,16 @@
       <div class="edit-actions">
         <button class="btn btn-danger" id="save-trailer">Сохранить</button>
         <button class="btn btn-ghost" id="cancel-edit">Отмена</button>
+      </div>
+    </div>
+  </div>
+  <div id="add-video-modal" class="modal">
+    <div class="edit-modal-content">
+      <h3>Добавить YouTube видео</h3>
+      <input type="text" id="youtube-link-input" placeholder="Введите URL YouTube видео" />
+      <div class="edit-actions">
+        <button class="btn btn-danger" id="save-youtube">Добавить</button>
+        <button class="btn btn-ghost" id="cancel-add">Отмена</button>
       </div>
     </div>
   </div>
@@ -279,6 +293,11 @@
       trailerInput: $('#trailer-link-input'),
       saveTrailer: $('#save-trailer'),
       cancelEdit: $('#cancel-edit'),
+      addVideo: $('#add-video'),
+      addVideoModal: $('#add-video-modal'),
+      youtubeInput: $('#youtube-link-input'),
+      saveYoutube: $('#save-youtube'),
+      cancelAdd: $('#cancel-add'),
     };
 
     function getDeviceId() {
@@ -294,7 +313,8 @@
 
     const allowedDevice = getDeviceId() === ALLOWED_DEVICE_ID;
     if (allowedDevice) {
-      el.searchbar.classList.remove('searchbar-hidden'); // Show search bar only for authorized device
+      el.searchbar.classList.remove('searchbar-hidden');
+      el.addVideo.classList.remove('searchbar-hidden');
       el.list.classList.add('sortable');
     }
 
@@ -348,6 +368,16 @@
       return pick ? `https://www.youtube.com/watch?v=${pick.key}` : '';
     }
 
+    function getYouTubeThumbnail(url) {
+      const videoId = url.match(/[?&]v=([^&]+)/)?.[1] || url.split('/').pop();
+      return videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : '';
+    }
+
+    function getYouTubeTitle(url) {
+      const videoId = url.match(/[?&]v=([^&]+)/)?.[1] || url.split('/').pop();
+      return videoId ? `YouTube Video: ${videoId}` : 'Unnamed Video';
+    }
+
     function save() {
       const payload = { items: state.items, order: state.order, updatedAt: Date.now(), device: getDeviceId() };
       set(ref(database, 'tmdbList'), payload)
@@ -362,7 +392,7 @@
         state.order = data.order || [];
         for (const k of Object.keys(state.items)) {
           const m = state.items[k];
-          if (!m.customTrailerUrl) m.customTrailerUrl = bestTrailerUrl(m) || '';
+          if (!m.customTrailerUrl && m.media_type === 'movie') m.customTrailerUrl = bestTrailerUrl(m) || '';
         }
         renderList();
       }, (error) => console.error('Ошибка загрузки:', error));
@@ -394,33 +424,33 @@
     }
 
     function cardTemplate(m, key, index) {
-      const poster = m.poster_path ? imgUrl(m.poster_path, 'w500') : '';
-      const title = m.title || m.name || '';
+      const poster = m.poster_path ? imgUrl(m.poster_path, 'w500') : m.youtubeUrl ? getYouTubeThumbnail(m.youtubeUrl) : '';
+      const title = m.title || m.name || m.youtubeTitle || '';
       const year = (m.release_date || m.first_air_date || '').slice(0,4) || '';
-      const genres = (m.genres||[]).slice(0,3).map(g=>`<span class="pill">${esc(g.name)}</span>`).join('');
+      const genres = m.genres ? (m.genres||[]).slice(0,3).map(g=>`<span class="pill">${esc(g.name)}</span>`).join('') : '';
       const rating = (m.vote_average && m.vote_count>0) ? `⭐${Number(m.vote_average).toFixed(1)}` : '';
       const runtime = (m.runtime ? `${m.runtime} min` : (Array.isArray(m.episode_run_time) && m.episode_run_time[0]) ? `${m.episode_run_time[0]} min` : '');
       const description = m.overview ? `<p class="description">${esc(m.overview)}</p>` : '';
+      const isYouTube = m.youtubeUrl;
       return `<article class="card" data-key="${esc(key)}">
         <img class="poster" src="${esc(poster)}" alt="Poster for ${esc(title)}" loading="lazy" />
         <div class="content">
-          <h3 style="margin:0 0 6px">${esc(title)} ${year ? `<span class=\"pill\" style=\"margin-left:6px\">${esc(year)}</span>` : ''}</h3>
-          <div class="row">${genres}</div>
-          ${description}
+          <h3 style="margin:0 0 6px">${esc(title)} ${!isYouTube && year ? `<span class=\"pill\" style=\"margin-left:6px\">${esc(year)}</span>` : ''}</h3>
+          ${!isYouTube ? `<div class="row">${genres}</div>${description}` : ''}
         </div>
         <div class="actions">
           <div class="row" style="gap:8px">
-            ${rating ? `<span class="pill">${esc(rating)}</span>` : ''}
-            ${runtime ? `<span class="pill">${esc(runtime)}</span>` : ''}
-            <span class="pill">${esc(m.media_type.toUpperCase())}</span>
+            ${!isYouTube && rating ? `<span class="pill">${esc(rating)}</span>` : ''}
+            ${!isYouTube && runtime ? `<span class="pill">${esc(runtime)}</span>` : ''}
+            ${!isYouTube ? `<span class="pill">${esc(m.media_type.toUpperCase())}</span>` : ''}
           </div>
           <div class="row" style="gap:8px">
-            <a class="btn-ghost" href="#" data-trailer="${esc(key)}" rel="noreferrer">Трейлер</a>
+            ${isYouTube ? `<a class="btn-ghost" href="${esc(m.youtubeUrl)}" target="_blank" rel="noreferrer">Видео</a>` : `<a class="btn-ghost" href="#" data-trailer="${esc(key)}" rel="noreferrer">Трейлер</a>`}
             <button class="btn btn-danger" data-remove="${esc(key)}" title="Удалить">Удалить</button>
             ${allowedDevice ? `
               <div style="display:flex;gap:4px;align-items:center;">
                 <input type="number" class="order-input" data-order="${esc(key)}" value="${index + 1}" min="1" max="${state.order.length}" style="width:40px;" title="Порядок карточки">
-                <button class="btn-ghost" data-edit="${esc(key)}" title="Редактировать трейлер">⚙️</button>
+                ${!isYouTube ? `<button class="btn-ghost" data-edit="${esc(key)}" title="Редактировать трейлер">⚙️</button>` : ''}
               </div>
             ` : ''}
           </div>
@@ -500,6 +530,35 @@
       el.editModal.addEventListener('click', backdrop);
     }
 
+    function openAddVideoModal(onSave) {
+      el.youtubeInput.value = '';
+      el.addVideoModal.style.display = 'flex';
+      const close = () => { el.addVideoModal.style.display = 'none'; cleanup(); };
+      const cleanup = () => {
+        el.saveYoutube.removeEventListener('click', saveHandler);
+        el.cancelAdd.removeEventListener('click', close);
+        el.addVideoModal.removeEventListener('click', backdrop);
+      };
+      const saveHandler = () => {
+        const url = el.youtubeInput.value.trim();
+        if (url) onSave(url);
+        close();
+      };
+      const backdrop = (e) => { if (e.target === el.addVideoModal) close(); };
+      el.saveYoutube.addEventListener('click', saveHandler, { once: true });
+      el.cancelAdd.addEventListener('click', close);
+      el.addVideoModal.addEventListener('click', backdrop);
+    }
+
+    function addYouTubeVideo(url) {
+      const key = `youtube_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const youtubeTitle = getYouTubeTitle(url);
+      state.items[key] = { youtubeUrl: url, youtubeTitle: youtubeTitle, media_type: 'youtube' };
+      state.order.unshift(key);
+      save();
+      renderList();
+    }
+
     function reorderItem(key, newPosition) {
       const currentIndex = state.order.indexOf(key);
       if (currentIndex === -1) return;
@@ -555,6 +614,7 @@
         document.addEventListener('click', (e) => {
           if (!el.searchbar.contains(e.target)) closeSuggestions();
         });
+        el.addVideo.addEventListener('click', () => openAddVideoModal(addYouTubeVideo));
       }
 
       el.list.addEventListener('click', async (e) => {
@@ -565,7 +625,7 @@
           const key = delBtn.getAttribute('data-remove');
           const m = state.items[key];
           if (!m) return;
-          const title = m.title || m.name || 'Неизвестное произведение';
+          const title = m.title || m.name || m.youtubeTitle || 'Неизвестное произведение';
           const card = el.list.querySelector(`.card[data-key="${key}"]`);
           openConfirmModal(title, key, card);
           return;
