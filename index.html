@@ -25,7 +25,6 @@
     body {
       margin: 0;
       font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
-      /* Darker gradient + faster animation */
       background: linear-gradient(-45deg, #0f172a, #1e293b, #111827, #0b0c0f);
       background-size: 400% 400%;
       background-attachment: fixed;
@@ -75,7 +74,6 @@
       display: flex;
       flex-direction: column;
     }
-    .sortable .card { cursor: grab }
     .card.wide { grid-column: span 6 }
     @media (max-width: 640px) { .card, .card.wide { grid-column: span 4 } }
     .poster { width: 100%; aspect-ratio: 3 / 4.2; object-fit: cover; background: #0b1220 }
@@ -151,8 +149,6 @@
     @keyframes spin { 0% { transform: translate(-50%, -50%) rotate(0deg) } 100% { transform: translate(-50%, -50%) rotate(360deg) } }
     #list.loading { display: none }
     .loader-container { position: relative; min-height: 200px; width: 100% }
-    body.noselect { user-select: none }
-    .card.dragging { opacity: 0.6; cursor: grabbing; }
     .card.removing { opacity: 0; visibility: hidden; transition: opacity 0.5s ease, visibility 0s linear 0.5s; }
   </style>
 </head>
@@ -216,7 +212,6 @@
 
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
     import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
-    import * as interact from 'https://cdn.jsdelivr.net/npm/interactjs@latest/dist/interact.min.js';
 
     const firebaseConfig = {
       apiKey: "AIzaSyDu8R38EkqOxBDkcgfnYf5mBTCosQsOoGA",
@@ -237,11 +232,6 @@
       selectedIndex: -1,
       suggestions: [],
     };
-
-    // Flags to stabilize order sync across devices
-    let isDragging = false;
-    let suppressRemote = false;
-    let localUpdatedAt = 0;
 
     const $ = (sel, ctx=document) => ctx.querySelector(sel);
     const $$ = (sel, ctx=document) => [...ctx.querySelectorAll(sel)];
@@ -330,9 +320,6 @@
 
     function save() {
       const payload = { items: state.items, order: state.order, updatedAt: Date.now(), device: getDeviceId() };
-      localUpdatedAt = payload.updatedAt;
-      suppressRemote = true;
-      setTimeout(() => { suppressRemote = false; }, 800);
       set(ref(database, 'tmdbList'), payload)
         .catch(err => console.error('Ошибка сохранения:', err));
     }
@@ -341,10 +328,6 @@
       onValue(ref(database, 'tmdbList'), (snapshot) => {
         const data = snapshot.val();
         if (!data) return;
-        // Ignore remote echoes while dragging or just after local save
-        if (isDragging || suppressRemote) return;
-        if ((data.updatedAt ?? 0) < localUpdatedAt) return;
-
         state.items = data.items || {};
         state.order = data.order || [];
         for (const k of Object.keys(state.items)) {
@@ -388,7 +371,7 @@
       const rating = (m.vote_average && m.vote_count>0) ? `⭐${Number(m.vote_average).toFixed(1)}` : '';
       const runtime = (m.runtime ? `${m.runtime} min` : (Array.isArray(m.episode_run_time) && m.episode_run_time[0]) ? `${m.episode_run_time[0]} min` : '');
       const description = m.overview ? `<p class="description">${esc(m.overview)}</p>` : '';
-      return `<article class="card" data-key="${esc(key)}" aria-grabbed="false">
+      return `<article class="card" data-key="${esc(key)}">
         <img class="poster" src="${esc(poster)}" alt="Poster for ${esc(title)}" loading="lazy" />
         <div class="content">
           <h3 style="margin:0 0 6px">${esc(title)} ${year ? `<span class=\"pill\" style=\"margin-left:6px\">${esc(year)}</span>` : ''}</h3>
@@ -418,8 +401,6 @@
         return;
       }
       el.list.innerHTML = state.order.map(key => cardTemplate(state.items[key], key)).join('');
-      // Re-init DnD after re-render
-      initCustomDnD();
     }
 
     async function addItem(type, id) {
@@ -500,69 +481,6 @@
       $$('.suggestion', el.suggestions).forEach((n, i) => n.setAttribute('aria-selected', String(i===state.selectedIndex)));
     }
 
-    // Stable DnD for the allowed device
-    function initCustomDnD() {
-      if (!allowedDevice) return;
-      const container = el.list;
-
-      interact('.card').draggable({
-        ignoreFrom: '.btn-ghost, button',
-        listeners: {
-          start(event) {
-            isDragging = true;
-            const target = event.target;
-            target.classList.add('dragging');
-            target.setAttribute('aria-grabbed', 'true');
-            document.body.classList.add('noselect');
-          },
-          move(event) {
-            // smooth visual drag with transform
-            const x = (parseFloat(event.target.getAttribute('data-x')) || 0) + event.dx;
-            const y = (parseFloat(event.target.getAttribute('data-y')) || 0) + event.dy;
-            event.target.style.transform = `translate(${x}px, ${y}px)`;
-            event.target.setAttribute('data-x', x);
-            event.target.setAttribute('data-y', y);
-          },
-          end(event) {
-            const target = event.target;
-            // compute drop position by pointer Y
-            const pointerY = event.clientY;
-            const dragKey = target.getAttribute('data-key');
-
-            const cards = $$('.card', container).filter(c => c !== target);
-            let dropIndex = cards.length;
-            for (let i = 0; i < cards.length; i++) {
-              const rect = cards[i].getBoundingClientRect();
-              const centerY = rect.top + rect.height / 2;
-              if (pointerY < centerY) { dropIndex = i; break; }
-            }
-
-            const newOrder = state.order.filter(k => k !== dragKey);
-            // map cards -> keys to translate visual index to order index
-            const keysInDomOrder = cards.map(c => c.getAttribute('data-key'));
-            // translate dropIndex from DOM list to order position
-            const beforeKey = keysInDomOrder[dropIndex];
-            const orderIndex = beforeKey ? newOrder.indexOf(beforeKey) : newOrder.length;
-            newOrder.splice(orderIndex, 0, dragKey);
-            state.order = newOrder;
-
-            // cleanup visuals
-            target.classList.remove('dragging');
-            target.setAttribute('aria-grabbed', 'false');
-            document.body.classList.remove('noselect');
-            target.style.transform = '';
-            target.removeAttribute('data-x');
-            target.removeAttribute('data-y');
-
-            save();
-            renderList();
-            // small delay to avoid applying remote echo
-            setTimeout(() => { isDragging = false; }, 100);
-          },
-        },
-      });
-    }
-
     document.addEventListener('DOMContentLoaded', () => {
       if (!allowedDevice) {
         el.searchbar.style.display = 'none';
@@ -633,7 +551,6 @@
       });
 
       subscribe();
-      initCustomDnD();
     });
   </script>
 </body>
