@@ -94,6 +94,16 @@
       box-shadow: var(--shadow), 0 0 10px rgba(255,255,255,0.06);
       display: flex;
       flex-direction: column;
+      transition: transform 0.5s ease-in-out, opacity 0.5s ease-in-out, visibility 0s linear 0.5s; /* Add transform transition */
+    }
+    .card.removing {
+      opacity: 0;
+      visibility: hidden;
+      transform: scale(0.95); /* Optional: slight scale-down for deletion effect */
+      transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out, visibility 0s linear 0.5s;
+    }
+    .card.repositioning {
+      transition: transform 0.5s ease-in-out, opacity 0.5s ease-in-out;
     }
     .card.youtube { grid-column: span 6; } /* Wider span for YouTube videos */
     .card.wide { grid-column: span 6 }
@@ -534,7 +544,26 @@
         el.list.innerHTML = `<div class="card wide"><div class="content"><h3 style="margin:6px 0 6px">Your list is empty</h3><p class="subtitle">Search above and click a result to add a movie or TV show.</p></div></div>`;
         return;
       }
+      // Store current card positions
+      const cards = $$('.card', el.list);
+      cards.forEach(card => {
+        const key = card.getAttribute('data-key');
+        const index = state.order.indexOf(key);
+        if (index !== -1) {
+          card.style.setProperty('--start-position', card.getBoundingClientRect().top);
+          card.style.setProperty('--end-position', index * 100); // Approximate new position (adjust as needed)
+        }
+      });
+    
       el.list.innerHTML = state.order.map((key, index) => cardTemplate(state.items[key], key, index)).join('');
+    
+      // Apply transition class to new cards
+      setTimeout(() => {
+        $$('.card', el.list).forEach(card => {
+          card.classList.add('repositioning');
+          setTimeout(() => card.classList.remove('repositioning'), 500);
+        });
+      }, 50); // Small delay to ensure DOM is updated
     }
 
     async function addItem(type, id) {
