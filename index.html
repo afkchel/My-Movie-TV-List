@@ -82,6 +82,8 @@
       grid-template-columns: repeat(12, 1fr);
       gap: 16px;
       align-items: start;
+      position: relative;
+      transition: none;
     }
     @media (max-width: 900px) { .list { grid-template-columns: repeat(6, 1fr) } }
     @media (max-width: 640px) { .list { grid-template-columns: repeat(4, 1fr) } }
@@ -94,22 +96,27 @@
       box-shadow: var(--shadow), 0 0 10px rgba(255,255,255,0.06);
       display: flex;
       flex-direction: column;
-      transition: transform 0.5s ease-in-out, opacity 0.5s ease-in-out, visibility 0s linear 0.5s; /* Add transform transition */
+      position: relative;
+      transition: transform 0.5s ease-in-out, opacity 0.5s ease-in-out, visibility 0s linear 0.5s;
     }
     .card.removing {
       opacity: 0;
+      transform: scale(0.95);
       visibility: hidden;
-      transform: scale(0.95); /* Optional: slight scale-down for deletion effect */
       transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out, visibility 0s linear 0.5s;
     }
     .card.repositioning {
+      position: absolute;
       transition: transform 0.5s ease-in-out, opacity 0.5s ease-in-out;
     }
-    .card.youtube { grid-column: span 6; } /* Wider span for YouTube videos */
+    .list.animating {
+      display: block;
+    }
+    .card.youtube { grid-column: span 6; }
     .card.wide { grid-column: span 6 }
     @media (max-width: 640px) { .card, .card.wide, .card.youtube { grid-column: span 4 } }
-    .poster { width: 100%; aspect-ratio: 3 / 4.2; object-fit: cover; background: #0b1220 } /* Default to TMDB aspect ratio */
-    .poster.youtube { aspect-ratio: 16 / 9; } /* YouTube-specific aspect ratio */
+    .poster { width: 100%; aspect-ratio: 3 / 4.2; object-fit: cover; background: #0b1220 }
+    .poster.youtube { aspect-ratio: 16 / 9; }
     .content { padding: 12px 14px 16px; flex: 0 0 auto; }
     .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 6px 0 }
     .description {
@@ -219,9 +226,7 @@
       animation-delay: -0.8s;
     }
     @-webkit-keyframes loader-3 {
-      0%,
-      40%,
-      100% {
+      0%, 40%, 100% {
         -webkit-transform: scaleY(0.4)
       }
       20% {
@@ -229,9 +234,7 @@
       }
     }
     @keyframes loader-3 {
-      0%,
-      40%,
-      100% {
+      0%, 40%, 100% {
         transform: scaleY(0.4);
         -webkit-transform: scaleY(0.4);
       }
@@ -242,7 +245,6 @@
     }
     #list.loading { display: none }
     .loader-container { position: relative; min-height: 200px; width: 100% }
-    .card.removing { opacity: 0; visibility: hidden; transition: opacity 0.5s ease, visibility 0s linear 0.5s; }
     .order-input { width: 40px; padding: 5px; border: 1px solid #374151; border-radius: 8px; background: var(--panel); color: var(--text); font-size: 14px; text-align: center; }
     .order-input:focus { border-color: var(--accent-2); outline: none; }
   </style>
@@ -544,26 +546,47 @@
         el.list.innerHTML = `<div class="card wide"><div class="content"><h3 style="margin:6px 0 6px">Your list is empty</h3><p class="subtitle">Search above and click a result to add a movie or TV show.</p></div></div>`;
         return;
       }
+
       // Store current card positions
-      const cards = $$('.card', el.list);
-      cards.forEach(card => {
+      const cardPositions = new Map();
+      $$('.card', el.list).forEach(card => {
         const key = card.getAttribute('data-key');
-        const index = state.order.indexOf(key);
-        if (index !== -1) {
-          card.style.setProperty('--start-position', card.getBoundingClientRect().top);
-          card.style.setProperty('--end-position', index * 100); // Approximate new position (adjust as needed)
+        if (key) {
+          const rect = card.getBoundingClientRect();
+          cardPositions.set(key, { top: rect.top, left: rect.left });
         }
       });
-    
+
+      // Update DOM with new card layout
       el.list.innerHTML = state.order.map((key, index) => cardTemplate(state.items[key], key, index)).join('');
-    
-      // Apply transition class to new cards
+
+      // Apply repositioning animation
+      $$('.card', el.list).forEach(card => {
+        const key = card.getAttribute('data-key');
+        const oldPos = cardPositions.get(key);
+        if (oldPos) {
+          const newRect = card.getBoundingClientRect();
+          const deltaX = oldPos.left - newRect.left;
+          const deltaY = oldPos.top - newRect.top;
+          card.classList.add('repositioning');
+          card.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+          // Force reflow to ensure transform is applied
+          card.offsetHeight;
+          card.style.transform = 'translate(0, 0)';
+        }
+      });
+
+      // Temporarily disable grid layout
+      el.list.classList.add('animating');
+
+      // Revert to grid layout after animation
       setTimeout(() => {
         $$('.card', el.list).forEach(card => {
-          card.classList.add('repositioning');
-          setTimeout(() => card.classList.remove('repositioning'), 500);
+          card.classList.remove('repositioning');
+          card.style.transform = '';
         });
-      }, 50); // Small delay to ensure DOM is updated
+        el.list.classList.remove('animating');
+      }, 500); // Match transition duration
     }
 
     async function addItem(type, id) {
@@ -583,7 +606,10 @@
     function openConfirmModal(title, key, card) {
       el.modalTitle.textContent = title;
       el.modal.style.display = 'flex';
-      const close = () => { el.modal.style.display = 'none'; cleanup(); };
+      const close = () => {
+        el.modal.style.display = 'none';
+        cleanup();
+      };
       const cleanup = () => {
         el.confirmDelete.removeEventListener('click', confirmHandler);
         el.cancelDelete.removeEventListener('click', close);
@@ -597,7 +623,7 @@
             state.order = state.order.filter(x => x !== key);
             save();
             renderList();
-          }, 500);
+          }, 500); // Match transition duration
         } else {
           delete state.items[key];
           state.order = state.order.filter(x => x !== key);
@@ -606,7 +632,9 @@
         }
         close();
       };
-      const backdrop = (e) => { if (e.target === el.modal) close(); };
+      const backdrop = (e) => {
+        if (e.target === el.modal) close();
+      };
       el.confirmDelete.addEventListener('click', confirmHandler, { once: true });
       el.cancelDelete.addEventListener('click', close);
       el.modal.addEventListener('click', backdrop);
@@ -615,14 +643,22 @@
     function openEditModal(currentUrl, onSave) {
       el.trailerInput.value = currentUrl || '';
       el.editModal.style.display = 'flex';
-      const close = () => { el.editModal.style.display = 'none'; cleanup(); };
+      const close = () => {
+        el.editModal.style.display = 'none';
+        cleanup();
+      };
       const cleanup = () => {
         el.saveTrailer.removeEventListener('click', saveHandler);
         el.cancelEdit.removeEventListener('click', close);
         el.editModal.removeEventListener('click', backdrop);
       };
-      const saveHandler = () => { onSave(el.trailerInput.value.trim()); close(); };
-      const backdrop = (e) => { if (e.target === el.editModal) close(); };
+      const saveHandler = () => {
+        onSave(el.trailerInput.value.trim());
+        close();
+      };
+      const backdrop = (e) => {
+        if (e.target === el.editModal) close();
+      };
       el.saveTrailer.addEventListener('click', saveHandler, { once: true });
       el.cancelEdit.addEventListener('click', close);
       el.editModal.addEventListener('click', backdrop);
@@ -631,7 +667,10 @@
     function openAddVideoModal(onSave) {
       el.youtubeInput.value = '';
       el.addVideoModal.style.display = 'flex';
-      const close = () => { el.addVideoModal.style.display = 'none'; cleanup(); };
+      const close = () => {
+        el.addVideoModal.style.display = 'none';
+        cleanup();
+      };
       const cleanup = () => {
         el.saveYoutube.removeEventListener('click', saveHandler);
         el.cancelAdd.removeEventListener('click', close);
@@ -645,7 +684,9 @@
         }
         close();
       };
-      const backdrop = (e) => { if (e.target === el.addVideoModal) close(); };
+      const backdrop = (e) => {
+        if (e.target === el.addVideoModal) close();
+      };
       el.saveYoutube.addEventListener('click', saveHandler, { once: true });
       el.cancelAdd.addEventListener('click', close);
       el.addVideoModal.addEventListener('click', backdrop);
